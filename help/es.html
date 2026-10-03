@@ -1,0 +1,1285 @@
+<!DOCTYPE html>
+
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>PanelMaster - Help</title>
+
+<style>
+    body {
+        font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Helvetica, Arial, sans-serif;
+        line-height: 1.6;
+        color: #24292f;
+        background: #ffffff;
+        max-width: 900px;
+        margin: 0 auto;
+        padding: 40px 24px;
+    }
+
+    h1 {
+        padding-bottom: 0.3em;
+        border-bottom: 1px solid #d0d7de;
+    }
+
+    h2 {
+        margin-top: 2em;
+        padding-bottom: 0.3em;
+        border-bottom: 1px solid #d0d7de;
+    }
+
+    h3 {
+        margin-top: 1.8em;
+    }
+
+    p {
+        margin: 1em 0;
+    }
+
+    code {
+        padding: 0.2em 0.4em;
+        font-size: 85%;
+        background: #f6f8fa;
+        border-radius: 6px;
+    }
+
+    blockquote {
+        margin: 1em 0;
+        padding: 0 1em;
+        color: #57606a;
+        border-left: 4px solid #d0d7de;
+    }
+
+    img,
+    video {
+        display: block;
+        max-width: 100%;
+        height: auto;
+        margin: 20px 0;
+    }
+
+    ul {
+        padding-left: 2em;
+    }
+
+    li {
+        margin: 0.4em 0;
+    }
+
+    strong {
+        font-weight: 600;
+    }
+
+    #toc {
+        background: #f6f8fa;
+        border: 1px solid #d0d7de;
+        border-radius: 6px;
+        padding: 12px 16px 12px 36px;
+        margin: 16px 0 28px;
+    }
+
+    #toc li {
+        margin: 1px 0;
+        line-height: 1.35;
+    }
+
+    #toc a {
+        text-decoration: none;
+    }
+
+    #toc a:hover {
+        text-decoration: underline;
+    }
+
+    .language-button {
+        position: fixed;
+        top: 20px;
+        right: 20px;
+        z-index: 1000;
+        display: block;
+    }
+
+    .language-button img {
+        width: 40px;
+        height: 40px;
+        margin: 0;
+        cursor: pointer;
+    }
+
+    .top-button {
+        position: fixed;
+        bottom: 24px;
+        right: 24px;
+        z-index: 1000;
+
+        width: 42px;
+        height: 42px;
+
+        display: flex;
+        align-items: center;
+        justify-content: center;
+
+        background: #ffffff;
+        border: 1px solid #d0d7de;
+        border-radius: 50%;
+
+        color: #393f45;
+        text-decoration: none;
+        font-size: 22px;
+        font-weight: 600;
+        line-height: 1;
+
+        box-shadow: 0 3px 8px rgba(0, 0, 0, 0.15);
+
+        transition:
+            background 0.15s ease,
+            color 0.15s ease,
+            box-shadow 0.15s ease,
+            transform 0.15s ease;
+    }
+
+    .top-button:hover {
+        background: #f6f8fa;
+        color: #24292f;
+        box-shadow: 0 5px 12px rgba(0, 0, 0, 0.20);
+        transform: translateY(-2px);
+    }
+</style>
+
+</head>
+
+<body>
+
+<h1>PanelMaster</h1>
+
+<p>
+    PanelMaster es una aplicación CAD de código abierto, portable, ligera y
+    con un conjunto completo de funcionalidades para el diseño de layouts de
+    paneles de control eléctrico, enfocada en la iteración rápida y en obtener
+    resultados visuales de alta calidad.
+</p>
+
+<h2>Tabla de contenidos</h2>
+
+<ul id="toc">
+    <li><a href="#quickstart">Inicio rápido</a></li>
+    <li><a href="#surfaces-basics">Conceptos básicos de Surfaces</a></li>
+    <li><a href="#anchors">Anchors</a></li>
+    <li><a href="#extensible-surfaces">Extensible Surfaces</a></li>
+    <li><a href="#annotations">Annotations</a></li>
+    <li><a href="#more-surface-anchor-features">Más funciones de Surface/Anchor</a></li>
+    <li><a href="#bonus">Extras</a></li>
+    <li><a href="#documents">Documents</a></li>
+    <li><a href="#document-editor">Document Editor</a></li>
+    <li><a href="#exports">Exportaciones (DXF, SVG)</a></li>
+    <li><a href="#title-blocks">Title Blocks</a></li>
+    <li><a href="#title-block-editor">Title Block Editor</a></li>
+</ul>
+
+<h2 id="quickstart">Inicio rápido</h2>
+
+<p>Esta es la pantalla inicial que aparece al iniciar PanelMaster:</p>
+
+<img src="quickstart/firstView.png" alt="FirstView" width="800">
+
+<p>
+    Para crear tu primer panel, selecciona <strong>File &gt; New Panel</strong>
+    y elige el template para tu enclosure mediante el diálogo de archivos:
+</p>
+
+<blockquote>
+    Los templates de enclosure utilizan el formato <code>.mwt</code>. Estos
+    especifican las dimensiones físicas del cabinet y sus mounting surfaces
+    internas (como backpanels o doors) donde se pueden colocar componentes.
+    Los templates incluidos se encuentran en <code>components/cabinets</code>.
+</blockquote>
+
+<img src="quickstart/panelTemplate.png" alt="SelectTemplate" width="600">
+
+<p>
+    Si el archivo es válido, el Workspace se abrirá con el cabinet dentro.
+    El Workspace puede abrirse o cerrarse en cualquier momento desde el menú
+    <strong>View</strong>, como cualquier otra ventana, o presionando
+    <strong>Esc</strong> mientras el cursor está sobre él.
+    Si el archivo es inválido o está corrupto, aparecerá un mensaje de error
+    en la esquina inferior izquierda.
+</p>
+
+<img src="quickstart/workspace.png" alt="Workspace" width="800">
+
+<p>
+    El Workspace está dividido en tres áreas principales: el Treeview, el Canvas
+    y el Inspector.
+</p>
+
+<ul>
+    <li>
+        <strong>Treeview:</strong> Muestra las entidades que conforman el enclosure
+        que se está editando. Contiene cuatro pestañas intercambiables:
+        <ul>
+            <li>
+                <strong>TreeList:</strong> Muestra las base surfaces disponibles
+                para colocar componentes, de acuerdo con el template seleccionado.
+            </li>
+            <li>
+                <strong>AnchorList:</strong> Muestra los anchors y sus constraints
+                presentes en la base surface activa (los anchors se explican más adelante).
+            </li>
+            <li>
+                <strong>SurfaceTree:</strong> Muestra la jerarquía de surfaces o
+                componentes colocados sobre la base surface seleccionada.
+            </li>
+            <li>
+                <strong>Annotations:</strong> Muestra las annotations y dimensiones
+                presentes en la base surface activa.
+            </li>
+        </ul>
+    </li>
+
+<li>
+    <strong>Canvas:</strong> El área de trabajo principal, donde puedes seleccionar
+    y mover surfaces y anchors. Usa la rueda del mouse para hacer zoom, mantenla
+    presionada para hacer pan y haz clic en el botón <strong>Reset View</strong>
+    en la esquina superior izquierda en cualquier momento para restablecer la
+    cámara a (0,0).
+</li>
+
+<li>
+    <strong>Inspector:</strong> Muestra y permite modificar las propiedades de
+    las surfaces o anchors seleccionados, así como las propiedades generales
+    del Workspace.
+</li>
+
+</ul>
+
+<h2 id="surfaces-basics">Conceptos básicos de Surfaces</h2>
+
+<p>
+    Las surfaces son los componentes principales que conforman un enclosure en
+    PanelMaster y se almacenan como archivos <code>.mwc</code>.
+</p>
+
+<p>
+    Están estructuradas jerárquicamente: cuando mueves o rotas una parent surface,
+    todas sus child surfaces la siguen automáticamente, lo que facilita reposicionar
+    bloques completos de componentes de una sola vez.
+</p>
+
+<ul>
+    <li>
+        Para agregar una surface, haz clic derecho sobre la parent surface deseada
+        y selecciona <strong>Add Child Surface</strong>. Luego selecciona el archivo
+        <code>.mwc</code> mediante el diálogo de archivos.
+
+    <blockquote>
+        Los archivos de surface incluidos se encuentran en <code>components/</code>.
+    </blockquote>
+</li>
+
+<li>
+    Para mover una surface en el Canvas, haz clic y arrástrala. Desde el Inspector
+    puedes consultar tanto su posición global como su posición relativa respecto
+    a su parent, además de ajustar su rotación.
+</li>
+
+<li>
+    Para eliminar una surface y sus children, haz clic derecho sobre ella y
+    selecciona <strong>Delete Surface</strong>.
+</li>
+
+</ul>
+
+<video autoplay loop muted playsinline width="800">
+    <source src="quickstart/surfaces/add_move_delete.mp4" type="video/mp4">
+    Your browser does not support HTML5 video playback.
+</video>
+
+<ul>
+    <li>
+        Para duplicar una surface, haz clic derecho sobre ella y selecciona
+        <strong>Duplicate Surface</strong>. Luego introduce el número de copias
+        deseado. Cada nueva copia se establecerá como child de la anterior,
+        creando una jerarquía anidada.
+    </li>
+
+<li>
+    Para alinear una surface y sus children, haz clic derecho sobre ella y
+    selecciona <strong>Align Children</strong>. Luego elige una de las siguientes
+    opciones de alineación:
+
+    <ul>
+        <li>
+            <strong>Align Ahead:</strong> Alinea únicamente las child surfaces
+            inmediatas hacia adelante.
+        </li>
+        <li>
+            <strong>Align Ahead (Recursive):</strong> Alinea todas las child
+            surfaces hacia adelante, incluyendo los descendants anidados
+            a mayor profundidad.
+        </li>
+        <li>
+            <strong>Align Behind:</strong> Alinea únicamente las child surfaces
+            inmediatas hacia atrás.
+        </li>
+        <li>
+            <strong>Align Behind (Recursive):</strong> Alinea todas las child
+            surfaces hacia atrás, incluyendo los descendants anidados
+            a mayor profundidad.
+        </li>
+    </ul>
+
+    Luego introduce la distancia de offset para especificar el espacio entre
+    cada elemento alineado.
+</li>
+
+<li>
+    Para aplanar una jerarquía de surfaces, haz clic derecho sobre la parent
+    surface, selecciona <strong>Flat Surface</strong> y elige una de las
+    siguientes operaciones:
+
+    <ul>
+        <li>
+            <strong>Flat from Father:</strong> Mueve las child surfaces inmediatas
+            al mismo nivel jerárquico que la parent. Las child surfaces mantienen
+            intactos sus propios descendants.
+        </li>
+        <li>
+            <strong>Flat from Father (Recursive):</strong> Mueve la surface y
+            todos sus descendants al mismo nivel jerárquico que la parent.
+        </li>
+        <li>
+            <strong>Flat Children:</strong> Promueve todos los descendants anidados
+            para convertirlos en children directos de la parent surface seleccionada,
+            creando una jerarquía de children de un solo nivel.
+        </li>
+    </ul>
+</li>
+
+</ul>
+
+<video autoplay loop muted playsinline width="800">
+    <source src="quickstart/surfaces/duplicate_align_flat.mp4" type="video/mp4">
+    Your browser does not support HTML5 video playback.
+</video>
+
+<ul>
+    <li>
+        Para cambiar el orden de visualización de las surfaces, haz clic derecho
+        sobre la surface objetivo y selecciona <strong>Shift Surface Up</strong>
+        o <strong>Shift Surface Down</strong>.
+    </li>
+
+<li>
+    Para cambiar el parent de una surface, selecciona la child surface con
+    clic izquierdo. Luego mantén presionado <strong>Left Shift</strong> y haz
+    clic izquierdo sobre la surface que será la nueva parent. Haz clic derecho
+    sobre cualquiera de las surfaces seleccionadas y selecciona
+    <strong>Reparent Surface</strong>. Luego elige una de las siguientes
+    opciones de posicionamiento:
+
+    <ul>
+        <li>
+            <strong>Keep Current Position:</strong> Mantiene la surface a la
+            que se le cambia el parent en sus coordenadas espaciales actuales.
+        </li>
+        <li>
+            <strong>Center in New Parent:</strong> Mueve la surface directamente
+            al origen local <code>(0,0)</code> de su nueva parent surface.
+        </li>
+    </ul>
+</li>
+
+</ul>
+
+<video autoplay loop muted playsinline width="800">
+    <source src="quickstart/surfaces/shift_reparent.mp4" type="video/mp4">
+    Your browser does not support HTML5 video playback.
+</video>
+
+<h2 id="anchors">Anchors</h2>
+
+<p>
+    Los anchors son la base paramétrica de PanelMaster. Proporcionan dimensiones
+    del mundo real (mm), sirven como puntos de referencia para las annotations
+    en pantalla y controlan el comportamiento de las extensible surfaces.
+    Los anchors pueden ser horizontales o verticales y pueden tener distintos
+    tipos de constraints establecidos entre ellos y con las surfaces.
+</p>
+
+<ul>
+    <li>
+        Para agregar un anchor, haz clic derecho sobre uno de los cuatro anchors
+        principales de una base surface y selecciona <strong>Add Offset</strong>.
+        Esto crea un nuevo anchor vinculado al anchor original mediante un offset
+        constraint. Usa el parámetro <strong>Val</strong> en el Inspector para
+        definir la distancia exacta en mm entre el nuevo anchor y el original.
+    </li>
+
+<li>
+    Para mover un anchor en el Canvas, haz clic y arrástralo hasta la posición
+    deseada. Sin embargo, si un anchor está restringido por un constraint o
+    ha sido bloqueado por el sistema o por el usuario, no podrá moverse
+    manualmente.
+</li>
+
+<li>
+    Para agregar varios anchors a la vez, mantén presionado <strong>Left Shift</strong>
+    y haz clic izquierdo para seleccionar más de un anchor principal. Haz clic
+    derecho y selecciona <strong>Add Offset</strong>. Selecciona
+    <strong>Multiple</strong> en el menú para crear simultáneamente un nuevo
+    offset anchor para cada anchor de referencia seleccionado.
+</li>
+
+<li>
+    Para eliminar un anchor, haz clic derecho sobre él y selecciona
+    <strong>Delete Anchor</strong>.
+</li>
+
+</ul>
+
+<video autoplay loop muted playsinline width="800">
+    <source src="quickstart/anchors/new_multiple_delete.mp4" type="video/mp4">
+    Your browser does not support HTML5 video playback.
+</video>
+
+<ul>
+    <li>
+        Para agregar un center anchor entre dos anchors paralelos, selecciona el
+        primer anchor con clic izquierdo. Luego mantén presionado
+        <strong>Left Shift</strong> y haz clic izquierdo sobre el segundo anchor
+        paralelo. Haz clic derecho sobre cualquiera de los anchors seleccionados
+        y selecciona <strong>Add Center</strong>. Esto crea un nuevo anchor
+        restringido directamente al punto medio entre los dos anchors de referencia.
+    </li>
+
+<li>
+    Para reflejar un anchor respecto a un anchor de referencia, selecciona
+    el anchor objetivo con clic izquierdo. Luego mantén presionado
+    <strong>Left Shift</strong> y haz clic izquierdo sobre el segundo anchor
+    que servirá como eje. Haz clic derecho sobre cualquiera de los anchors
+    y selecciona <strong>Add Mirror</strong>. Esto crea un nuevo anchor
+    restringido simétricamente en el lado opuesto al primer anchor con
+    respecto a la referencia seleccionada.
+</li>
+
+<li>
+    Para liberar un anchor de su constraint, haz clic derecho sobre el anchor
+    y selecciona <strong>Free Constraint</strong>.
+</li>
+
+</ul>
+
+<video autoplay loop muted playsinline width="800">
+    <source src="quickstart/anchors/center_mirror_free.mp4" type="video/mp4">
+    Your browser does not support HTML5 video playback.
+</video>
+
+<h2 id="extensible-surfaces">Extensible Surfaces</h2>
+
+<p>
+    Las extensible surfaces son surfaces especializadas capaces de cambiar
+    dinámicamente de tamaño, como los cable ducts o DIN rails. A diferencia de
+    las surfaces estándar, ignoran las configuraciones de posición jerárquicas
+    y responden exclusivamente a los anchor constraints. A pesar de este
+    comportamiento de posicionamiento paramétrico, las extensible surfaces
+    mantienen las capacidades estándar de parenting: pueden tener otras surfaces
+    como parent y las child surfaces pueden tenerlas como parent.
+</p>
+
+<ul>
+    <li>
+        Para agregar una extensible surface, selecciona tres anchors de referencia:
+        dos anchors paralelos y uno perpendicular. Haz clic izquierdo para seleccionar
+        el primer anchor, luego mantén presionado Left Shift y haz clic izquierdo
+        sobre los otros dos. Haz clic derecho sobre la parent surface deseada,
+        selecciona <strong>Add Child Surface</strong> y elige un archivo de
+        extensible surface mediante el diálogo de archivos.
+
+    <blockquote>
+        Las extensible surfaces también utilizan el formato de archivo
+        <code>.mwc</code>. Los archivos de extensible surfaces incluidos
+        se encuentran en <code>components/extensibles</code>.
+    </blockquote>
+</li>
+
+<li>
+    Para modificar la longitud o posición de una extensible surface, haz clic
+    y arrastra sus anchors de referencia en el Canvas o ajusta sus valores
+    de offset desde el Inspector.
+</li>
+
+<li>
+    Las extensible surfaces también pueden actuar como parent surfaces:
+    puedes hacer clic derecho sobre una extensible surface y seleccionar
+    <strong>Add Child Surface</strong> para hacer que otras surfaces sean
+    sus children, igual que con las surfaces estándar.
+</li>
+
+<li>
+    Para controlar el lado de posicionamiento de una extensible surface,
+    selecciona la surface y modifica el parámetro <strong>AxisAlign</strong>
+    en el Inspector. Este parámetro especifica en qué lado del anchor
+    perpendicular principal se renderiza la surface.
+</li>
+
+</ul>
+
+<video autoplay loop muted playsinline width="800">
+    <source src="quickstart/surfaces/extensible_basic.mp4" type="video/mp4">
+    Your browser does not support HTML5 video playback.
+</video>
+
+<ul>
+    <li>
+        Las extensible surfaces pueden agregarse con un único anchor de referencia
+        seleccionado. En ese caso, los dos anchors perpendiculares más cercanos,
+        a cada lado del mouse, se seleccionarán automáticamente. Se recomienda
+        la selección explícita cuando se trabaja con muchos anchors.
+    </li>
+
+<li>
+    Para modificar los cortes en cada extremo de una extensible surface,
+    selecciona la surface y ajusta las propiedades <strong>LCut</strong> y
+    <strong>RCut</strong> bajo Anchor Setup en el Inspector. El valor especifica
+    la distancia en milímetros desde el borde correspondiente donde se realiza
+    el corte. Los valores positivos y negativos producen cortes en direcciones
+    opuestas.
+
+    <blockquote>
+        Por ejemplo, si la extensible surface tiene un ancho de 25 mm, establecer
+        el valor del corte en 25 mm produce un corte de 45 grados.
+    </blockquote>
+</li>
+
+<li>
+    Al agregar una extensible surface con cuatro anchors de referencia
+    seleccionados, dos horizontales y dos verticales, se crea automáticamente
+    un frame utilizando la extensible surface seleccionada, aplicando
+    automáticamente los cortes de las esquinas.
+</li>
+
+</ul>
+
+<video autoplay loop muted playsinline width="800">
+    <source src="quickstart/surfaces/extensible_cuts_frame.mp4" type="video/mp4">
+    Your browser does not support HTML5 video playback.
+</video>
+
+<h2 id="annotations">Annotations</h2>
+
+<p>
+    Las annotations son el elemento utilizado en PanelMaster para visualizar
+    las dimensiones entre dos anchors.
+</p>
+
+<p>
+    Son puramente visuales y no modifican las dimensiones reales.
+    Para establecer una dimensión exacta, modifica en su lugar el valor del
+    anchor correspondiente.
+</p>
+
+<ul>
+    <li>
+        Para agregar una annotation, selecciona dos anchors: haz clic izquierdo
+        sobre el primer anchor, luego mantén presionado Left Shift y haz clic
+        izquierdo sobre el segundo. Haz clic derecho sobre cualquiera de los
+        anchors seleccionados y selecciona <strong>Add Annotation</strong>.
+        La annotation aparecerá entre los dos anchors en la posición del mouse.
+    </li>
+
+<li>
+    Para mover una annotation, simplemente arrástrala con el mouse.
+</li>
+
+<li>
+    Para eliminar una annotation, haz clic derecho sobre ella y selecciona
+    <strong>Delete Annotation</strong>.
+</li>
+
+<li>
+    Para agregar extension lines a una annotation, mantén presionado Left Shift
+    y haz clic sobre la annotation, luego mueve el mouse hasta la posición deseada.
+</li>
+
+<li>
+    Para eliminar las extension lines de una annotation, haz clic derecho
+    sobre la annotation y selecciona <strong>Disable Extension Lines</strong>.
+</li>
+
+<li>
+    Para cambiar el lado en el que se muestra el texto de la annotation,
+    haz clic derecho sobre la annotation y selecciona <strong>Flip Side</strong>.
+</li>
+
+<li>
+    Para ocultar una annotation, haz clic derecho sobre ella y selecciona
+    <strong>Hide/Show Annotation</strong>. Para mostrarla nuevamente, haz clic
+    derecho sobre la annotation desde la sección Annotations del TreeView
+    y selecciona nuevamente <strong>Hide/Show Annotation</strong>.
+</li>
+
+</ul>
+
+<video autoplay loop muted playsinline width="800">
+    <source src="quickstart/annotations.mp4" type="video/mp4">
+    Your browser does not support HTML5 video playback.
+</video>
+
+<h2 id="more-surface-anchor-features">Más funciones de Surface/Anchor</h2>
+
+<p>
+    Hay varias funciones disponibles para permitir que las surfaces y anchors
+    interactúen de formas más complejas, principalmente pensadas para manejar
+    layouts de doors y configuraciones similares.
+</p>
+
+<ul>
+    <li>
+        Al agregar un anchor, su posición puede bloquearse para evitar cambios
+        accidentales seleccionando el anchor y activando el checkbox
+        <strong>Locked</strong> bajo la sección Anchors del Inspector.
+    </li>
+
+<li>
+    El movimiento de una surface puede restringirse a lo largo de cualquiera
+    de los ejes activando <strong>Fixed Local X</strong> o
+    <strong>Fixed Local Y</strong> bajo la sección Surface Properties del
+    Inspector. Al agregar una child surface a una extensible surface, su
+    eje local Y queda bloqueado por defecto para simular el comportamiento
+    de un componente que se desliza a lo largo de un rail.
+</li>
+
+<li>
+    De forma similar a las annotations, los anchors y surfaces, incluyendo
+    sus descendants, pueden ocultarse y mostrarse tanto desde el Canvas
+    como desde el TreeView.
+</li>
+
+</ul>
+
+<video autoplay loop muted playsinline width="800">
+    <source src="quickstart/lock_hide_anchors_surfaces.mp4" type="video/mp4">
+    Your browser does not support HTML5 video playback.
+</video>
+
+<ul>
+    <li>
+        Para establecer un anchor existente como el offset de otro anchor, haz
+        clic izquierdo sobre el anchor que se utilizará como offset. Luego mantén
+        presionado <strong>Left Shift</strong> y haz clic izquierdo sobre el anchor
+        que utilizará el offset. Haz clic derecho sobre cualquiera de los anchors
+        y selecciona <strong>Set as Offset</strong>.
+    </li>
+
+<li>
+    Para establecer un anchor existente como el centro entre otros dos anchors,
+    haz clic izquierdo sobre el anchor que se utilizará como centro. Luego
+    mantén presionado <strong>Left Shift</strong> y haz clic izquierdo sobre
+    los dos anchors exteriores. Haz clic derecho sobre cualquiera de los tres
+    anchors y selecciona <strong>Set as Center</strong>.
+</li>
+
+<li>
+    Para establecer un anchor existente como el mirror de otro anchor, haz
+    clic izquierdo sobre el anchor que se utilizará como mirror. Luego mantén
+    presionado <strong>Left Shift</strong> y haz clic izquierdo sobre el anchor
+    que será reflejado, seguido del anchor que se utilizará como eje. Haz clic
+    derecho sobre cualquiera de los tres anchors y selecciona
+    <strong>Set as Mirror</strong>.
+</li>
+
+</ul>
+
+<video autoplay loop muted playsinline width="800">
+    <source src="quickstart/anchors/set_as.mp4" type="video/mp4">
+    Your browser does not support HTML5 video playback.
+</video>
+
+<ul>
+    <li>
+        Para crear layouts precisos, una surface puede fijarse a uno o dos anchors.
+        Selecciona la surface y el anchor, haz clic derecho sobre la surface y
+        selecciona <strong>Fix to Anchor</strong>. Esto puede repetirse con un
+        anchor sobre el eje opuesto para posicionar la surface en la intersección
+        de los dos anchors.
+    </li>
+
+<li>
+    Para liberar una surface de uno o más anchors, haz clic derecho sobre la
+    surface y selecciona <strong>Free From Anchor</strong>. Si la surface está
+    fijada a múltiples anchors, selecciona si deseas eliminar el constraint
+    Vertical u Horizontal.
+</li>
+
+<li>
+    Los anchors también pueden alinearse con surfaces. Selecciona la surface
+    y el anchor, haz clic derecho sobre el anchor y selecciona
+    <strong>Fix to Surface</strong>. Una vez fijado, el valor del anchor puede
+    ajustarse para establecer un offset relativo a la posición de la surface,
+    o el anchor puede bloquearse para evitar movimientos accidentales.
+</li>
+
+<li>
+    Para liberar un anchor de su surface constraint, haz clic derecho sobre
+    el anchor y selecciona <strong>Free Constraint</strong>.
+
+    <blockquote>
+        Combinadas con los diferentes anchor constraints, estas funciones
+        permiten crear layouts de componentes sorprendentemente complejos,
+        responsivos, simétricos y completamente paramétricos.
+    </blockquote>
+</li>
+
+</ul>
+
+<video autoplay loop muted playsinline width="800">
+    <source src="quickstart/anchors/fix_to_surface.mp4" type="video/mp4">
+    Your browser does not support HTML5 video playback.
+</video>
+
+<ul>
+    <li>
+        Los componentes destinados al montaje en doors incluyen sus dimensiones
+        de cutout. Para mostrarlas, activa o desactiva DrawCutOuts bajo General
+        Properties en el Inspector. La opción DrawSkins en la misma sección
+        puede desactivarse para ocultar el componente cuando estorbe.
+    </li>
+
+<li>
+    Al hacer clic derecho sobre un componente aparecen las opciones
+    <strong>Create Boundary Anchors</strong> y <strong>Create CutOut Anchors</strong>,
+    que crean automáticamente anchors en las dimensiones máximas y de cutout
+    del componente. Estos anchors pueden utilizarse posteriormente para
+    posicionamiento del layout o annotations.
+
+    <blockquote>
+        Los Boundary Anchors son especialmente útiles para componentes
+        extensibles, por ejemplo, para posicionar rails entre cable ducts.
+    </blockquote>
+</li>
+
+<li>
+    Para activar una surface como <strong>Ghost Reference</strong>, mantén
+    presionado Left Shift y haz clic izquierdo sobre una base surface diferente
+    en la pestaña <strong>TreeList</strong> del <strong>TreeView</strong>.
+    La surface se mostrará como una referencia semitransparente debajo de la
+    surface actualmente seleccionada. Mantener presionado Left Shift y hacer
+    clic izquierdo nuevamente sobre el ghost activo lo desactivará.
+</li>
+
+<li>
+    Al hacer clic derecho sobre la ghost surface en la pestaña
+    <strong>TreeList</strong> del <strong>TreeView</strong> aparecen opciones
+    para voltear el ghost a lo largo del eje X o Y. Esto puede utilizarse
+    para representar con precisión la parte posterior de una door al verla
+    desde el frente, como si se observara mediante una radiografía.
+</li>
+
+</ul>
+
+<video autoplay loop muted playsinline width="800">
+    <source src="quickstart/ghost_boundaries_cutouts.mp4" type="video/mp4">
+    Your browser does not support HTML5 video playback.
+</video>
+
+<ul>
+    <li>
+        Las projections se utilizan para transferir medidas de una base surface
+        a otra. Permiten que un anchor de una surface coincida continuamente
+        con el valor de un anchor de otra surface diferente. Para establecer un
+        projection constraint, primero establece un <strong>Ghost Reference</strong>
+        para la surface desde la cual se tomará la projection. Luego selecciona
+        el anchor que se utilizará como projection en esa surface. Regresa a la
+        target surface y selecciona el anchor que recibirá la projection.
+        Finalmente, haz clic derecho y selecciona <strong>Set as Projection</strong>
+        o <strong>Set as Inverted Projection</strong> (si el ghost está volteado).
+    </li>
+
+<li>
+    Para liberar un anchor de su projection constraint, haz clic derecho sobre
+    el anchor y selecciona <strong>Free Constraint</strong>.
+</li>
+
+</ul>
+
+<video autoplay loop muted playsinline width="800">
+    <source src="quickstart/anchors/projections.mp4" type="video/mp4">
+    Your browser does not support HTML5 video playback.
+</video>
+
+<h2 id="bonus">Extras</h2>
+
+<ul>
+    <li>
+        El panel completo puede reemplazarse de una sola vez mientras se ajustan
+        automáticamente la mayoría de las dimensiones. Ve a
+        <strong>File &gt; Change Panel</strong> y selecciona cualquier panel.
+    </li>
+</ul>
+
+<video autoplay loop muted playsinline width="800">
+    <source src="quickstart/bonus.mp4" type="video/mp4">
+    Your browser does not support HTML5 video playback.
+</video>
+
+<blockquote>
+    Si el panel de reemplazo tiene menos base surfaces que el original, esas
+    surfaces y sus contenidos serán eliminados, y cualquier anchor constraint
+    que haga referencia a un anchor perteneciente a una surface eliminada
+    también será liberado.
+</blockquote>
+
+<h2 id="documents">Documents</h2>
+
+<p>
+    Los Documents son las estructuras utilizadas por PanelMaster para generar
+    documentación técnica. Cada proyecto contiene un único document, que se
+    edita mediante el Document Editor, accesible desde View &gt; Document Editor.
+    El document se almacena como parte del proyecto y no requiere un archivo
+    separado. Una vez completado, puede exportarse como PDF para visualizarlo,
+    imprimirlo o compartirlo.
+</p>
+
+<p>
+    Los Documents están compuestos por pages. Todas las pages de un document
+    comparten el mismo tamaño, definido en milímetros y establecido por defecto
+    en A4 horizontal (420W × 297H). Cada page puede activar o desactivar
+    independientemente su frame y ajustar sus frame margins, que también se
+    definen en milímetros.
+</p>
+
+<p>
+    Cada page también tiene su propia lista de entities. Las entities son los
+    elementos que pueden agregarse a una page, cada una con su propia posición
+    dentro de la page. Además, cada tipo de entity tiene su propio conjunto de
+    propiedades editables, que pueden configurarse directamente desde el
+    Document Editor. Actualmente, PanelMaster admite los siguientes tipos de
+    entities:
+</p>
+
+<ul>
+    <li>Surfaces: Superficies de panel que pueden mostrarse como parte del document.</li>
+    <li>Text: Elementos de texto que pueden colocarse en la page.</li>
+    <li>Stickers: Elementos de imagen que pueden colocarse en la page. Actualmente no se admite transparencia.</li>
+    <li>Title Blocks: Se explican más adelante.</li>
+</ul>
+
+<h2 id="document-editor">Document Editor</h2>
+
+<p>
+    El Document Editor puede abrirse en cualquier momento desde View &gt;
+    Document Editor. Está dividido en tres áreas principales: el Entity List,
+    el Canvas y el Inspector.
+</p>
+
+<ul>
+    <li>
+        <strong>Entity List:</strong> Muestra las pages contenidas en el document,
+        así como las entities pertenecientes a cada page.
+    </li>
+
+<li>
+    <strong>Canvas:</strong> Muestra la page actualmente seleccionada,
+    donde sus entities pueden seleccionarse y moverse.
+</li>
+
+<li>
+    <strong>Inspector:</strong> Muestra y permite modificar las propiedades
+    de la entity seleccionada en la page actual.
+</li>
+
+</ul>
+
+<img src="quickstart/documentEditor.png" alt="Workspace" width="800">
+
+<p><strong>Uso:</strong></p>
+
+<ul>
+    <li>
+        Al crear un proyecto nuevo, el document no contiene pages por defecto.
+        Para crear una page, haz clic derecho en el Entity List y selecciona New Page.
+    </li>
+
+<li>
+    Para modificar el tamaño de la page, utiliza los parámetros W y H bajo
+    la sección Document Properties del Inspector.
+</li>
+
+<li>
+    Para agregar un frame a la page, activa Draw Frame bajo la sección
+    Page Properties del Inspector. Una vez activado, los parámetros
+    LeftMargin, RightMargin, TopMargin y BottomMargin estarán disponibles
+    en la misma sección y pueden utilizarse para ajustar los márgenes de
+    cada lado del frame.
+</li>
+
+</ul>
+
+<video autoplay loop muted playsinline width="800">
+    <source src="quickstart/documentEditor/newpage_changesize.mp4" type="video/mp4">
+    Your browser does not support HTML5 video playback.
+</video>
+
+<ul>
+    <li>
+        Para agregar una surface a una page, haz clic derecho en el Entity List
+        y selecciona <strong>Add Surface</strong>.
+    </li>
+
+<li>
+    Para mover una Surface entity, haz clic y arrástrala en el Canvas.
+</li>
+
+<li>
+    Para modificar una Surface entity, selecciónala desde el Entity List
+    o el Canvas. Las siguientes opciones están disponibles bajo la sección
+    <strong>Surface Properties</strong> del Inspector:
+
+    <ul>
+        <li>
+            <strong>Scale:</strong> Cambia el tamaño de la surface en la page.
+        </li>
+
+        <li>
+            <strong>LOD:</strong> Controla el nivel de detalle utilizado para
+            dibujar los componentes sobre la surface. La mayoría de los
+            componentes tienen disponibles tres niveles de detalle diferentes.
+
+            <blockquote>
+                Para surfaces grandes mostradas en pages pequeñas, utilizar
+                un nivel de detalle inferior puede hacer que el dibujo sea
+                más limpio y fácil de leer.
+            </blockquote>
+        </li>
+
+        <li>
+            <strong>AnnFontSize:</strong> Cambia el tamaño de fuente de las
+            annotations mostradas en la surface.
+        </li>
+
+        <li>
+            <strong>AnnArrowSize:</strong> Cambia el tamaño de las flechas
+            de las annotations.
+        </li>
+
+        <li>
+            <strong>Draw Annotations:</strong> Activa o desactiva las
+            annotations en la surface.
+        </li>
+
+        <li>
+            <strong>Draw Skins:</strong> Activa o desactiva el dibujo de las
+            skins de los componentes en la surface. Las extensible surfaces
+            siguen dibujándose cuando esta opción está desactivada.
+        </li>
+
+        <li>
+            <strong>Draw Cutouts:</strong> Activa o desactiva las áreas de
+            cutout de los componentes. Cuando está activado, los componentes
+            con geometría de cutout muestran sus cutouts mediante un patrón
+            de líneas diagonales.
+        </li>
+    </ul>
+</li>
+
+</ul>
+
+<video autoplay loop muted playsinline width="800">
+    <source src="quickstart/documentEditor/add_surface_surface_props.mp4" type="video/mp4">
+    Your browser does not support HTML5 video playback.
+</video>
+
+<ul>
+    <li>
+        Para agregar una text entity a una page, haz clic derecho en el Entity List
+        y selecciona <strong>Add Text</strong>.
+    </li>
+
+<li>
+    Para mover una Text entity, haz clic y arrástrala en el Canvas.
+</li>
+
+<li>
+    Para modificar una Text entity, selecciónala desde el Entity List o el
+    Canvas. Las siguientes opciones están disponibles bajo la sección
+    <strong>Text Properties</strong> del Inspector:
+
+    <ul>
+        <li>
+            <strong>Text:</strong> Especifica el texto que se mostrará.
+            Se admite texto multilínea.
+        </li>
+
+        <li>
+            <strong>Size:</strong> Cambia el tamaño del texto.
+        </li>
+
+        <li>
+            <strong>Left, Center, Right:</strong> Alinea el texto multilínea
+            respecto a la línea más larga.
+
+            <blockquote>
+                Actualmente PanelMaster no admite text boxes de tamaño fijo.
+                Como alternativa, puedes agregar una línea que contenga
+                únicamente espacios para establecer el ancho deseado.
+                Las demás líneas se alinearán entonces respecto a esta línea.
+            </blockquote>
+        </li>
+
+        <li>
+            <strong>R, G, B:</strong> Controla el color del texto utilizando
+            valores independientes de rojo, verde y azul.
+        </li>
+    </ul>
+</li>
+
+</ul>
+
+<video autoplay loop muted playsinline width="800">
+    <source src="quickstart/documentEditor/text.mp4" type="video/mp4">
+    Your browser does not support HTML5 video playback.
+</video>
+
+<ul>
+    <li>
+        Para agregar un sticker a una page, haz clic derecho en el Entity List y
+        selecciona <strong>Add Sticker</strong>. Luego selecciona un archivo de
+        imagen válido mediante el diálogo de archivos.
+    </li>
+
+<li>
+    Para mover una Sticker entity, haz clic y arrástrala en el Canvas.
+</li>
+
+<li>
+    Para modificar una Sticker entity, selecciónala desde el Entity List o
+    el Canvas. La opción <strong>Scale</strong> bajo la sección
+    <strong>Sticker Properties</strong> del Inspector cambia el tamaño
+    del sticker en la page.
+</li>
+
+</ul>
+
+<video autoplay loop muted playsinline width="800">
+    <source src="quickstart/documentEditor/stickers.mp4" type="video/mp4">
+    Your browser does not support HTML5 video playback.
+</video>
+
+<ul>
+    <li>
+        Para eliminar una entity, haz clic derecho sobre ella en el Entity List
+        o el Canvas y selecciona <strong>Delete Entity</strong>.
+    </li>
+
+<li>
+    Para eliminar una page, haz clic derecho en el Entity List y selecciona
+    <strong>Delete Page</strong>. Esto elimina la page activa.
+</li>
+
+<li>
+    Para duplicar una page, haz clic derecho en el Entity List y selecciona
+    <strong>Duplicate Page</strong>. Esto crea una copia de la page activa,
+    incluyendo todas sus entities.
+</li>
+
+<li>
+    Para cambiar el orden de dibujo de una entity, haz clic derecho sobre ella
+    en el Entity List y selecciona <strong>Shift Up</strong> o
+    <strong>Shift Down</strong>.
+</li>
+
+</ul>
+
+<video autoplay loop muted playsinline width="800">
+    <source src="quickstart/documentEditor/delete_duplicate_shift.mp4" type="video/mp4">
+    Your browser does not support HTML5 video playback.
+</video>
+
+<h2 id="exports">Exportaciones (DXF, SVG)</h2>
+
+<ul>
+    <li>
+        Para exportar los cutouts de un surface tree como un archivo <code>.dxf</code>,
+        haz clic derecho sobre la surface deseada en la pestaña <strong>TreeList</strong>
+        y selecciona <strong>Export Cutouts</strong>. Luego se abrirá un diálogo de
+        archivos para elegir la ubicación de salida.
+        El archivo exportado contiene dos layers: <strong>SURFACE</strong>, que
+        contiene el contorno de la surface, y <strong>CUTOUTS</strong>, que contiene
+        la geometría de los cutouts.
+    </li>
+</ul>
+
+<blockquote>
+    El formato DXF y sus layers independientes están destinados a workflows de
+    fabricación, como el mecanizado o corte láser de la puerta del cabinet.
+</blockquote>
+
+<ul>
+    <li>
+        Para exportar una base surface como archivo <code>.svg</code>, agrégala
+        como una Surface entity a cualquier page del Document del proyecto.
+        Luego haz clic derecho sobre la entity y selecciona
+        <strong>Export to SVG</strong>.
+        El SVG exportado conserva los parámetros de visualización de la entity,
+        como <strong>LOD</strong>, la configuración de annotations,
+        <strong>Draw Skins</strong> y <strong>Draw Cutouts</strong>, produciendo
+        un resultado visualmente idéntico a la Surface entity en el Document.
+    </li>
+</ul>
+
+<blockquote>
+    La exportación SVG es útil para importar dibujos en otras aplicaciones con
+    capacidades de edición de Documents más avanzadas que las que actualmente
+    ofrece PanelMaster, como Microsoft Word o Inkscape. El rendimiento de SVG
+    no está altamente optimizado por el momento, por lo que los archivos
+    exportados pueden ser relativamente pesados.
+</blockquote>
+
+<video autoplay loop muted playsinline width="800">
+    <source src="quickstart/dxf_svg.mp4" type="video/mp4">
+    Your browser does not support HTML5 video playback.
+</video>
+
+<h2 id="title-blocks">Title Blocks</h2>
+
+<p>
+    Los Title Blocks son los paneles de información que comúnmente se encuentran
+    en los dibujos técnicos. En PanelMaster son completamente personalizables
+    y no están limitados a un layout fijo. Pueden crearse con diferentes
+    divisiones, posiciones y tamaños de texto para adaptarse a las necesidades
+    de cada document.
+</p>
+
+<p>
+    Los Title Blocks están divididos en Rects, que pueden contener texto y un
+    label opcional.
+</p>
+
+<p>
+    Los Title Blocks pueden guardarse y cargarse para utilizarse en otros proyectos.
+    Utilizan la extensión de archivo <strong>.mwi</strong>, lo que permite reutilizar
+    layouts comunes entre diferentes proyectos. Una vez creados, los Title Blocks
+    se utilizan como entities en las pages de los Documents.
+</p>
+
+<h2 id="title-block-editor">Title Block Editor</h2>
+
+<p>
+    El TitleBlock Editor puede abrirse en cualquier momento desde View &gt;
+    TitleBlock Editor. Está dividido en tres áreas principales: el TitleBlock List,
+    el Canvas y el Inspector.
+</p>
+
+<img src="quickstart/TitleBlockEditor.png" alt="Workspace" width="800">
+
+<br>
+
+<ul>
+    <li>
+        Para crear un nuevo Title Block, haz clic derecho en el TitleBlock List
+        y selecciona <strong>New Title Block</strong>, o utiliza
+        File &gt; New Title Block.
+    </li>
+
+<li>
+    Para guardar un Title Block, haz clic derecho sobre él en el TitleBlock
+    List y selecciona <strong>Save Title Block As</strong>, o utiliza
+    File &gt; Save Title Block As.
+</li>
+
+<li>
+    Para abrir un Title Block existente, haz clic derecho en el TitleBlock
+    List y selecciona <strong>Open Title Block</strong>, o utiliza
+    File &gt; Open Title Block.
+</li>
+
+<li>
+    Una vez creado un Title Block, sus dimensiones pueden cambiarse mediante
+    las opciones <strong>W</strong> y <strong>H</strong> bajo la sección
+    <strong>TitleBlock Properties</strong> del Inspector.
+</li>
+
+<li>
+    Para seleccionar un Rect, haz clic izquierdo sobre él. Sus
+    <strong>Rect Properties</strong> se mostrarán entonces en el Inspector.
+</li>
+
+<li>
+    Para dividir un Rect, haz clic derecho sobre él y selecciona
+    <strong>Split Horizontally</strong> o <strong>Split Vertically</strong>,
+    dependiendo de la dirección deseada. Luego introduce el número de
+    divisiones en el campo <strong>Divisions</strong> para especificar en
+    cuántas secciones debe dividirse el Rect.
+</li>
+
+<li>
+    Para cambiar el tamaño de un Rect, haz clic y arrastra cualquiera de sus bordes.
+</li>
+
+<li>
+    Para eliminar un Rect, cambia su tamaño hasta que una de sus dimensiones
+    llegue a cero, arrastrando uno de sus bordes sobre el borde opuesto.
+</li>
+
+</ul>
+
+<p>
+    Cuando se selecciona un Rect, sus parámetros disponibles se muestran bajo
+    la sección Rect Properties del Inspector:
+</p>
+
+<ul>
+    <li>
+        <strong>Label:</strong> Especifica el identificador del Rect.
+        Cada Rect debe tener un label único.
+    </li>
+
+<li>
+    <strong>No Label:</strong> Oculta el label del Rect. Esto puede ser útil
+    al colocar un sticker dentro del Rect, cuando el label no se alinea
+    correctamente o cuando no se necesita un label.
+</li>
+
+<li>
+    <strong>Content:</strong> Especifica el contenido mostrado dentro del Rect.
+    Por defecto, el mismo contenido se utiliza para cada instancia del
+    Title Block.
+</li>
+
+<li>
+    <strong>External Content:</strong> Hace que el contenido del Rect sea
+    independiente para cada instancia del Title Block dentro de un document.
+    Cuando está activado, su contenido puede establecerse por separado
+    desde el Document Editor.
+</li>
+
+<li>
+    <strong>TextSize:</strong> Establece el tamaño tanto del contenido del
+    Rect como de su label.
+</li>
+
+<li>
+    <strong>TextAtBottom:</strong> Alinea el texto contra el borde inferior
+    del Rect.
+</li>
+
+<li>
+    <strong>TextAtTop:</strong> Alinea el texto contra el borde superior
+    del Rect.
+</li>
+
+</ul>
+
+<video autoplay loop muted playsinline width="800">
+    <source src="quickstart/TitleBlockEditor.mp4" type="video/mp4">
+    Your browser does not support HTML5 video playback.
+</video>
+
+<a href="index.html" class="language-button">
+    <img src="en.png" alt="English">
+</a>
+
+<a href="#top" class="top-button" aria-label="Back to top">↑</a>
+
+</body>
+</html>

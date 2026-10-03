@@ -1,0 +1,10 @@
+-Iinclude
+-Istatics
+-Iorigami/include
+-Iorigami/statics
+-Ilibs/cjson
+-Ilibs/pdfgen
+-Ilibs/ttf2mesh
+-Ilibs/dxfout
+-Ilibs/svg
+-I/usr/include/GLFW

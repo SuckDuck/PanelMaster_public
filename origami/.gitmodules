@@ -1,0 +1,3 @@
+[submodule "littlebuild"]
+	path = littlebuild
+	url = https://github.com/SuckDuck/littlebuild

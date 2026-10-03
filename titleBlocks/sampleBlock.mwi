@@ -1,0 +1,84 @@
+{
+	"version":	0,
+	"size":	{
+		"w":	195,
+		"h":	48
+	},
+	"lines":	[{
+			"t":	0,
+			"type":	0
+		}, {
+			"t":	1,
+			"type":	0
+		}, {
+			"t":	0,
+			"type":	1
+		}, {
+			"t":	1,
+			"type":	1
+		}, {
+			"t":	0.26536217331886292,
+			"type":	1
+		}, {
+			"t":	0.3333333432674408,
+			"type":	0
+		}, {
+			"t":	0.66666668653488159,
+			"type":	0
+		}, {
+			"t":	0.632681131362915,
+			"type":	1
+		}, {
+			"t":	0.862563192844391,
+			"type":	1
+		}],
+	"rects":	[{
+			"lines":	[6, 1, 7, 3],
+			"textSize":	6,
+			"textPos":	0,
+			"label":	"Tech:",
+			"content":	" Peter Parker",
+			"externalContent":	false,
+			"noLabel":	false
+		}, {
+			"lines":	[0, 1, 2, 4],
+			"textSize":	10,
+			"textPos":	0,
+			"label":	"Rect1:",
+			"content":	"",
+			"externalContent":	false,
+			"noLabel":	true
+		}, {
+			"lines":	[0, 5, 8, 3],
+			"textSize":	6,
+			"textPos":	0,
+			"label":	"Pg:",
+			"content":	"",
+			"externalContent":	true,
+			"noLabel":	false
+		}, {
+			"lines":	[5, 6, 4, 3],
+			"textSize":	6,
+			"textPos":	0,
+			"label":	"Company:",
+			"content":	" Stark Industries",
+			"externalContent":	false,
+			"noLabel":	false
+		}, {
+			"lines":	[6, 1, 4, 7],
+			"textSize":	6,
+			"textPos":	0,
+			"label":	"Ing:",
+			"content":	" Tony Stark",
+			"externalContent":	false,
+			"noLabel":	false
+		}, {
+			"lines":	[0, 5, 4, 8],
+			"textSize":	6,
+			"textPos":	1,
+			"label":	"Project:",
+			"content":	"Project: J.A.R.V.I.S Reactor\n         Control",
+			"externalContent":	false,
+			"noLabel":	true
+		}]
+}
