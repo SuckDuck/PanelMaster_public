@@ -1,3 +1,6 @@
+// Copyright 2026 Esteban Huertas
+// SPDX-License-Identifier: Apache-2.0
+
 #ifndef TITLEBLOCK_H
 #define TITLEBLOCK_H
 

@@ -1144,6 +1144,183 @@ void ShowHideSurface(Surface *s){
     HideSurface(s);
 }
 
+static void UpdateBoundarieAnchors(Surface *s){
+    float w = s->size.x;
+    float h = s->size.y;
+
+    Vector2 offset = {
+        s->origin.x, 
+        s->origin.y
+    };
+    
+    if (s->globalRotation != 0 && s->globalRotation != 180){
+        float tmp = w;
+        w = h;
+        h = tmp;
+
+        tmp = offset.x;
+        offset.x = offset.y;
+        offset.y = tmp;
+    }
+
+    if (s->globalRotation == 90 || s->globalRotation == 180){
+        offset.x *= -1;
+        offset.y *= -1;
+    }
+
+    // TOP
+    if (s->boundariesAnchors.top){
+        s->boundariesAnchors.top->val = h/2 *-1 - offset.y;
+        s->boundariesAnchors.top->opts |= ANCHOR_OPT_FIXED;    
+    }
+    
+    // BOTTOM
+    if (s->boundariesAnchors.bottom){
+        s->boundariesAnchors.bottom->val = h/2 - offset.y;
+        s->boundariesAnchors.bottom->opts |= ANCHOR_OPT_FIXED;    
+    }
+    
+    // LEFT
+    if (s->boundariesAnchors.left){
+        s->boundariesAnchors.left->val = w/2 *-1 - offset.x;
+        s->boundariesAnchors.left->opts |= ANCHOR_OPT_FIXED;    
+    }
+    
+    // RIGHT
+    if (s->boundariesAnchors.right){
+        s->boundariesAnchors.right->val = w/2 - offset.x;
+        s->boundariesAnchors.right->opts |= ANCHOR_OPT_FIXED;    
+    }
+    
+}
+
+void CreateSurfaceBoundarieAnchors(Surface *s){
+    if (!s) return;
+    if (s->type == SURFACE_EXTENSIBLE){
+        SelectAnchor(s->anchors[0], false, false);
+        switch (s->anchorAlign){
+            case ANCHOR_ALIGN_MIN:
+            case ANCHOR_ALIGN_MAX:{
+                float val = s->size.y * (s->anchorAlign == ANCHOR_ALIGN_MIN ? -1:1);
+                float absVal = GetAnchorAbsValue(s->anchors[0]) + val;
+                for (Anchor *a = activeTree->anchors; a != NULL; a = a->next){
+                    if (a->type != s->anchors[0]->type) continue;
+                    if (FloatEquals(GetAnchorAbsValue(a), absVal)) return;
+                }
+
+                Anchor *newA = AddAnchorOffset(
+                    s->anchors[0],
+                    ResolveAnchorName(s->anchors[0]->name, s->tree), 
+                    val
+                );
+
+                AnchorToggleLock(newA);
+            }
+            break;
+
+            case ANCHOR_ALIGN_CENTER:{
+                float val = s->size.y/2;
+                float absVal = GetAnchorAbsValue(s->anchors[0]) + val;
+                for (Anchor *a = activeTree->anchors; a != NULL; a = a->next){
+                    if (a->type != s->anchors[0]->type) continue;
+                    if (FloatEquals(GetAnchorAbsValue(a), absVal)) return;
+                }
+
+                for (int i=0; i<2; i++){
+                    Anchor *newA = AddAnchorOffset(
+                        s->anchors[0],
+                        ResolveAnchorName(s->anchors[0]->name, s->tree), 
+                        val * (i==0 ? -1:1)
+                    );
+
+                    AnchorToggleLock(newA);
+                }
+            }
+            break;
+        }
+        return;
+    }
+
+    char name[2048] = {0};
+
+    float w = s->size.x;
+    float h = s->size.y;
+
+    Vector2 offset = {
+        s->origin.x, 
+        s->origin.y
+    };
+
+    if (s->globalRotation != 0 && s->globalRotation != 180){
+        float tmp = w;
+        w = h;
+        h = tmp;
+
+        tmp = offset.x;
+        offset.x = offset.y;
+        offset.y = tmp;
+    }
+
+    if (s->globalRotation == 90 || s->globalRotation == 180){
+        offset.x *= -1;
+        offset.y *= -1;
+    }
+
+    // TOP
+    if (!s->boundariesAnchors.top){
+        sprintf(name, "%s_top", s->name);
+        Anchor *top = AddAnchor(
+            s->tree, 
+            ResolveAnchorName(name, s->tree),
+            ANCHOR_HORIZONTAL, 
+            0
+        );
+        FixAnchorToSurface(top, s);
+        s->boundariesAnchors.top = top;
+    }
+
+    // BOTTOM
+    if (!s->boundariesAnchors.bottom){
+        sprintf(name, "%s_bottom", s->name);
+        Anchor *bottom = AddAnchor(
+            s->tree, 
+            ResolveAnchorName(name, s->tree), 
+            ANCHOR_HORIZONTAL, 
+            0
+        );
+        FixAnchorToSurface(bottom, s);
+        s->boundariesAnchors.bottom = bottom;
+    }
+
+    // LEFT
+    if (!s->boundariesAnchors.left){
+        sprintf(name, "%s_left", s->name);
+        Anchor *left = AddAnchor(
+            s->tree, 
+            ResolveAnchorName(name, s->tree), 
+            ANCHOR_VERTICAL, 
+            0
+        );
+        FixAnchorToSurface(left, s);
+        s->boundariesAnchors.left = left;
+    }
+
+    // RIGHT
+    if (!s->boundariesAnchors.right){
+        sprintf(name, "%s_right", s->name);
+        Anchor *right = AddAnchor(
+            s->tree, 
+            ResolveAnchorName(name, s->tree), 
+            ANCHOR_VERTICAL, 
+            0
+        );
+        FixAnchorToSurface(right, s);
+        s->boundariesAnchors.right = right;
+    }
+
+    UpdateBoundarieAnchors(s);
+}
+
 /* <== Anchors =================================================> */
 
 const char *GetAnchorTypeStr(AnchorType t){
@@ -1847,6 +2024,30 @@ bool IsAnchorPartOfBoundary(Anchor *a){
     if (a->refSurface->boundariesAnchors.left == a)   return true;
     if (a->refSurface->boundariesAnchors.right == a)  return true;
     return false;
+}
+
+LinePoints GetAnchorScreenPoints(OG_Viewport *v, Anchor *a){
+    switch (a->type){
+        case ANCHOR_HORIZONTAL:{
+            float p = v->size.height*-1/2;
+            p += GetAnchorAbsValue(a) * v->camera.zoom - v->camera.target.y * v->camera.zoom;
+            
+            return (LinePoints){
+                {0, p},
+                {v->size.width, p}
+            };
+        }
+
+        case ANCHOR_VERTICAL:{
+            float p = v->size.width/2;
+            p += GetAnchorAbsValue(a) * v->camera.zoom - v->camera.target.x * v->camera.zoom;
+
+            return (LinePoints){
+                {p, 0},
+                {p, v->size.height*-1}
+            };
+        }
+    }
 }
 
 /* <== Annotations =============================================> */

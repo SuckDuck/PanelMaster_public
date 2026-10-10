@@ -6,12 +6,14 @@
 #include <stddef.h>
 #include <stdio.h>
 #include "caddraw.h"
+#include "loader.h"
 #include "origami.h"
 #include "surfaces.h"
 #include "titleblock.h"
 #include "viewports.h"
 #include "documentation.h"
 #include "main.h"
+#include "componentslib.h"
 #include "IBMPlexMono-Medium.h"
 #include "Icon.h"
 
@@ -46,6 +48,8 @@ Document mainDocument = {
 int titleBlocksQ = 0;
 TitleBlock *titleBlocks[TITLEBLOCKS_Q];
 TitleBlock *activeTitleBlock;
+
+ComponentsLib componentsLib;
 
 static Texture2D bgTex;
 
@@ -87,6 +91,11 @@ int main(int argc, char **argv){
         " !\"#$%&'()*+,-./:;<=>∧⋀⌃?@[\\]^_`{|}~θ°"
         "0123456789 "
     );
+
+    // Load Components libraries
+    char componentsLibrariePath[OG_PATH_MAX];
+    sprintf(componentsLibrariePath, "%s%s/data/component_library.mwl", GetApplicationDirectory(), ROOT);
+    LoadComponentLibrary(componentsLibrariePath, NULL);
 
     while (true) {
         if (OG_UpdateFrame()) break;

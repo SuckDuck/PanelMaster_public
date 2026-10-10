@@ -1,3 +1,6 @@
+// Copyright 2026 Esteban Huertas
+// SPDX-License-Identifier: Apache-2.0
+
 #ifndef UTILS_H
 #define UTILS_H
 
@@ -11,6 +14,13 @@ typedef struct LinePoints{
 typedef struct RectCorners{
     Vector2 points[5];
 } RectCorners;
+
+typedef struct Tab {
+    const char *name;
+    int labelWidth;
+    float contentSize;
+    float scroll;
+} Tab;
 
 Vector2 Vector2RotateDegrees(Vector2 v, float angle);
 RectCorners GetRectCorners(Rectangle rect, Vector2 center, float scale, float rotation);
@@ -28,6 +38,7 @@ bool IsBlank(const char *str);
 Color ColorWithAlpha(Color c, int alpha);
 bool IsHorizontal(float rotation);
 bool IsVertical(float rotation);
+void DrawTextureTile(Texture2D texture, int indexX, int indexY, int posX, int posY, int divisions);
 int mu_number_custom(mu_Context *ctx, mu_Real *value, mu_Real step, const char *fmt, int opt);
 void mu_space(mu_Context *ctx);
 void mu_vertical_space(mu_Context *ctx, int height);

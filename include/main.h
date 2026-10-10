@@ -1,13 +1,22 @@
+// Copyright 2026 Esteban Huertas
+// SPDX-License-Identifier: Apache-2.0
+
 #ifndef MAIN_H
 #define MAIN_H
 
 #include "titleblock.h"
+#include <raylib.h>
+
 #ifndef PROJECT_TITLE
 #define PROJECT_TITLE ""
 #endif
 
 #ifndef PROJECT_VERSION
 #define PROJECT_VERSION ""
+#endif
+
+#ifndef ROOT
+#define ROOT ".."
 #endif
 
 #define HIGHLIGHT_C  CLITERAL(Color){ 000,121,241,255 }
@@ -20,6 +29,7 @@
 #include "surfaces.h"
 #include "documentation.h"
 #include "caddraw.h"
+#include "componentslib.h"
 
 extern int titleBlocksQ;
 extern TitleBlock *titleBlocks[];
@@ -41,5 +51,7 @@ extern char templateSourcePath[];
 extern char currentAssemblyPath[];
 
 extern CadFont *cadFont;
+
+extern ComponentsLib componentsLib;
 
 #endif

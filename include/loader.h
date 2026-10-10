@@ -1,3 +1,6 @@
+// Copyright 2026 Esteban Huertas
+// SPDX-License-Identifier: Apache-2.0
+
 #ifndef LOADER_H
 #define LOADER_H
 
@@ -80,7 +83,12 @@ typedef enum LoaderErrorCodesV0 {
     LDRV0_ERR_FLAGS         = 'z',
     LDRV0_ERR_BOUNDARIES    = '?',
     LDRV0_ERR_EXTENSION     = '_',
-
+    LDRV0_ERR_LIBRARY       = '!',
+    LDRV0_ERR_PREVIEW       = '-',
+    LDRV0_ERR_PATH          = '@',
+    LDRV0_ERR_NODE          = '|',
+    LDRV0_ERR_INDEX         = '/',
+    LDRV0_ERR_EXTENSIBLE    = '\\'
 } LoaderErrorCodesV0;
 
 // LDRV0_ERR_MISSING LDRV0_ERR_ASM LDRV0_ERR_DOCUMENT LDRV0_ERR_ENTITY LDRV0_ERR_FLAGS
@@ -96,5 +104,6 @@ bool LoadPanelTemplate(char *path, void *param);
 bool ReloadPanelTemplate(char *path, void *param);
 bool LoadSurface(char *path, void *param);
 bool LoadAssembly(char *path, void *param);
+bool LoadComponentLibrary(char *path, void *param);
 
 #endif

@@ -1016,6 +1016,7 @@ static int LoadSurfaceExtensibleV0(cJSON *j, void *param){
         activeTree->lastInsertedSurface->anchorAlign = ANCHOR_ALIGN_MAX;
         activeTree->lastInsertedSurface->leftCut = width->valuedouble;
         activeTree->lastInsertedSurface->rightCut = width->valuedouble;
+        CreateSurfaceBoundarieAnchors(activeTree->lastInsertedSurface);
 
         activeTree->anchorSelection[0] = sortedAnchors[3];
         activeTree->anchorSelection[1] = sortedAnchors[0];
@@ -1024,7 +1025,7 @@ static int LoadSurfaceExtensibleV0(cJSON *j, void *param){
         activeTree->lastInsertedSurface->anchorAlign = ANCHOR_ALIGN_MIN;
         activeTree->lastInsertedSurface->leftCut = width->valuedouble;
         activeTree->lastInsertedSurface->rightCut = width->valuedouble;;
-
+        CreateSurfaceBoundarieAnchors(activeTree->lastInsertedSurface);
 
         activeTree->anchorSelection[0] = sortedAnchors[1];
         activeTree->anchorSelection[1] = sortedAnchors[2];
@@ -1033,7 +1034,7 @@ static int LoadSurfaceExtensibleV0(cJSON *j, void *param){
         activeTree->lastInsertedSurface->anchorAlign = ANCHOR_ALIGN_MIN;
         activeTree->lastInsertedSurface->leftCut = width->valuedouble*-1;
         activeTree->lastInsertedSurface->rightCut = width->valuedouble*-1;
-
+        CreateSurfaceBoundarieAnchors(activeTree->lastInsertedSurface);
 
         activeTree->anchorSelection[0] = sortedAnchors[2];
         activeTree->anchorSelection[1] = sortedAnchors[0];
@@ -1042,7 +1043,8 @@ static int LoadSurfaceExtensibleV0(cJSON *j, void *param){
         activeTree->lastInsertedSurface->anchorAlign = ANCHOR_ALIGN_MAX;
         activeTree->lastInsertedSurface->leftCut = width->valuedouble*-1;
         activeTree->lastInsertedSurface->rightCut = width->valuedouble*-1;
-        
+        CreateSurfaceBoundarieAnchors(activeTree->lastInsertedSurface);
+
 
         for (int i=0; i<ANCHOR_SELECTION_BUF_LEN; i++)
             activeTree->anchorSelection[i] = NULL;
@@ -1296,13 +1298,6 @@ static int ReloadTemplateV0(cJSON *j){
     int rs = VerificateTemplate(j);
     if (rs != LDRV0_OK) 
         return rs;
-
-    /* legacy
-    if (!TemplatesMatch(j)){
-        SetError(LDRV0_ERR_TEMPLATE, LDRV0_ERR_MISMATCH, 0);
-        return LDRV0_ERR_CODE;
-    }
-    */
 
     cJSON *surfaces = cJSON_GetObjectItem(j, "surfaces");
     cJSON *surface = NULL;
@@ -2089,6 +2084,127 @@ static int LoadAssemblyV0(cJSON *j){
     return LDRV0_OK;
 }
 
+/* <== Libraries ===============================================> */
+
+static int VerificateLibNodeV0(cJSON *j, bool noFolder){
+    int rs = LDRV0_OK;
+    
+    if (!cJSON_IsObject(j)){
+        SetError(LDRV0_ERR_LIBRARY, LDRV0_ERR_INVALID, LDRV0_ERR_TREE, LDRV0_ERR_NODE);
+        return LDRV0_ERR_CODE;
+    }
+
+    JSON_REQUIRE_RET(name, j, &cJSON_IsString, LDRV0_ERR_LIBRARY, LDRV0_ERR_TREE, LDRV0_ERR_NODE, LDRV0_ERR_NAME);
+
+    // in case it is a folder
+    cJSON *content = cJSON_GetObjectItem(j, "content");
+    if (content){
+        if (noFolder){
+            SetError(LDRV0_ERR_LIBRARY, LDRV0_ERR_INVALID, LDRV0_ERR_EXTENSIBLE, LDRV0_ERR_NODE);
+            return LDRV0_ERR_CODE;
+        }
+
+        if (!cJSON_IsArray(content)){
+            SetError(LDRV0_ERR_LIBRARY, LDRV0_ERR_INVALID, LDRV0_ERR_TREE, LDRV0_ERR_NODE);
+            return LDRV0_ERR_CODE;
+        }
+
+        JSON_REQUIRE_RET(expanded, j, &cJSON_IsBool, LDRV0_ERR_LIBRARY, LDRV0_ERR_TREE, LDRV0_ERR_NODE);
+
+        cJSON *childNode;
+        cJSON_ArrayForEach(childNode, content){
+            int rss = VerificateLibNodeV0(childNode, false);
+            if (rss != LDRV0_OK)
+                return rss;
+        }
+    }
+
+    // in case it is a component
+    else{
+        JSON_REQUIRE_RET(path, j, &cJSON_IsString, LDRV0_ERR_LIBRARY, LDRV0_ERR_TREE, LDRV0_ERR_NODE, LDRV0_ERR_PATH);
+        JSON_REQUIRE_RET(preview, j, &cJSON_IsArray, LDRV0_ERR_LIBRARY, LDRV0_ERR_TREE, LDRV0_ERR_NODE, LDRV0_ERR_PREVIEW);
+        if (cJSON_GetArraySize(preview) != 3){
+            SetError(LDRV0_ERR_LIBRARY, LDRV0_ERR_INVALID, LDRV0_ERR_TREE, LDRV0_ERR_NODE, LDRV0_ERR_INDEX);
+            return LDRV0_ERR_CODE;
+        }
+
+        for (int i=0; i<3; i++){
+            if (!cJSON_IsNumber(cJSON_GetArrayItem(preview, i))){
+                SetError(LDRV0_ERR_LIBRARY, LDRV0_ERR_INVALID, LDRV0_ERR_TREE, LDRV0_ERR_NODE, LDRV0_ERR_INDEX);
+                return LDRV0_ERR_CODE;
+            }
+        }
+    }
+    
+    return rs;
+}
+
+static int LoadComponentLibraryV0(cJSON *j){
+    int rs = LDRV0_OK;
+    
+    // Verificate the previews atlas
+    JSON_REQUIRE_RET(previews, j, &cJSON_IsArray, LDRV0_ERR_LIBRARY, LDRV0_ERR_PREVIEW, LDRV0_ERR_SECTION);
+    cJSON *preview;
+    cJSON_ArrayForEach(preview, previews){
+        if (!cJSON_IsString(preview)){
+            SetError(LDRV0_ERR_LIBRARY, LDRV0_ERR_INVALID, LDRV0_ERR_PREVIEW);
+            return LDRV0_ERR_CODE;
+        }
+
+        char atlasPath[OG_PATH_MAX];
+        sprintf(atlasPath, "%s%s/data/%s", GetApplicationDirectory(), ROOT, preview->valuestring);
+        
+        if (!FileExists(atlasPath)){
+            SetError(LDRV0_ERR_LIBRARY, LDRV0_ERR_MISSING, LDRV0_ERR_PREVIEW, LDRV0_ERR_PATH);
+            return LDRV0_ERR_CODE;
+        }
+
+        Image img = LoadImage(atlasPath);
+        if (img.data == NULL){
+            SetError(LDRV0_ERR_LIBRARY, LDRV0_ERR_INVALID, LDRV0_ERR_PREVIEW, LDRV0_ERR_PATH);
+            return LDRV0_ERR_CODE;
+        }
+
+        UnloadImage(img);
+    }
+
+    // Verificate the extensibles
+    JSON_REQUIRE_RET(extensibles, j, &cJSON_IsArray, LDRV0_ERR_LIBRARY, LDRV0_ERR_EXTENSIBLE, LDRV0_ERR_SECTION);
+    
+    cJSON *ext;
+    cJSON_ArrayForEach(ext, extensibles){
+        int rss = VerificateLibNodeV0(ext, true);
+        if (rss != LDRV0_OK){
+            return rss;
+        }
+    }
+
+    // Verificate the component_tree
+    JSON_REQUIRE_RET(component_tree, j, &cJSON_IsArray, LDRV0_ERR_LIBRARY, LDRV0_ERR_TREE, LDRV0_ERR_SECTION);
+
+    cJSON *node;
+    cJSON_ArrayForEach(node, component_tree){
+        int rss = VerificateLibNodeV0(node, false);
+        if (rss != LDRV0_OK){
+            return rss;
+        }
+            
+    }
+
+    // Everything is ok, now is loading time
+    int previewI = 0;
+    cJSON_ArrayForEach(preview, previews){
+        char atlasPath[OG_PATH_MAX];
+        sprintf(atlasPath, "%s%s/data/%s", GetApplicationDirectory(), ROOT, preview->valuestring);
+        Image img = LoadImage(atlasPath);
+        componentsLib.atlas[previewI++] = LoadTextureFromImage(img);
+    }
+
+    componentsLib.extensibles = cJSON_Duplicate(extensibles, true);
+    componentsLib.tree = cJSON_Duplicate(component_tree, true);
+    return LDRV0_OK;
+}
+
 /* <== Public API ==============================================> */
 /*  all these functions should be called from the file selection dialog
     so they all asume 'path' is relative to pwd */
@@ -2395,5 +2511,31 @@ bool LoadAssembly(char *path, void *param){
     loadedAssemblyFile = NULL;
     FreeFileGeneric(f);
 
+    return loadFlag;
+}
+
+bool LoadComponentLibrary(char *path, void *param){
+    int rs = 0;
+    errCode[0] = '\0';
+    bool loadFlag = false;
+    
+    FileGeneric f = LoadFileGeneric(path, ".mwl");
+    HANDLE_GENERAL_ERRORS;
+
+    switch (f.version){
+        case 0:{
+            loadFlag = LoadComponentLibraryV0(f.root);
+            if (loadFlag != LDRV0_OK){
+                OG_PushLog("Failed to load component lib %s: (err code):%s", path, errCode);
+            }
+        } break;
+        
+        default:{
+            OG_PushLog("File %s is invalid or corrupted (version unknown)", path);
+            break;
+        }
+    }
+
+    FreeFileGeneric(f);
     return loadFlag;
 }

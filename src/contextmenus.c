@@ -19,13 +19,10 @@
 #include "titleblock.h"
 #include "utils.h"
 #include "contextmenus.h"
+#include "workspace.h"
 
 static int alignCase = 0;
 static TitleBlockRect *targetTitleBlockRect;
-
-// these comes from workspace
-extern int WorkspaceDrawSkins;
-extern int WorkspaceDrawCutOuts;
 
 static void RenameAnchor(char *name){
     if (name == NULL || name[0] == '\0') {
@@ -171,56 +168,6 @@ static void NewOffsetAnchor(char *name, Anchor *baseAnchor){
     }
 
     SelectAnchor(newAnchor, false, false);
-}
-
-static void UpdateBoundarieAnchors(Surface *s){
-    float w = s->size.x;
-    float h = s->size.y;
-
-    Vector2 offset = {
-        s->origin.x, 
-        s->origin.y
-    };
-    
-    if (s->globalRotation != 0 && s->globalRotation != 180){
-        float tmp = w;
-        w = h;
-        h = tmp;
-
-        tmp = offset.x;
-        offset.x = offset.y;
-        offset.y = tmp;
-    }
-
-    if (s->globalRotation == 90 || s->globalRotation == 180){
-        offset.x *= -1;
-        offset.y *= -1;
-    }
-
-    // TOP
-    if (s->boundariesAnchors.top){
-        s->boundariesAnchors.top->val = h/2 *-1 - offset.y;
-        s->boundariesAnchors.top->opts |= ANCHOR_OPT_FIXED;    
-    }
-    
-    // BOTTOM
-    if (s->boundariesAnchors.bottom){
-        s->boundariesAnchors.bottom->val = h/2 - offset.y;
-        s->boundariesAnchors.bottom->opts |= ANCHOR_OPT_FIXED;    
-    }
-    
-    // LEFT
-    if (s->boundariesAnchors.left){
-        s->boundariesAnchors.left->val = w/2 *-1 - offset.x;
-        s->boundariesAnchors.left->opts |= ANCHOR_OPT_FIXED;    
-    }
-    
-    // RIGHT
-    if (s->boundariesAnchors.right){
-        s->boundariesAnchors.right->val = w/2 - offset.x;
-        s->boundariesAnchors.right->opts |= ANCHOR_OPT_FIXED;    
-    }
-    
 }
 
 //___________________________________________
@@ -397,10 +344,10 @@ static void AnchorContextMenu(char *opt, void *param){
         if (a->A->type == ANCHOR_VERTICAL) a->offset = pos.y;
         if (a->B->type == ANCHOR_HORIZONTAL) a->offset = pos.x;
 
-        if ((IsAnchorPartOfCutout(a->A) || IsAnchorPartOfCutout(a->B)) && !WorkspaceDrawCutOuts)
+        if ((IsAnchorPartOfCutout(a->A) || IsAnchorPartOfCutout(a->B)) && !inspectorSettings.DrawCutOuts)
             OG_PushLog("Annotation not visible: uses a cutout anchor, but cutout rendering is disabled");
         
-        if ((IsAnchorPartOfBoundary(a->A) || IsAnchorPartOfBoundary(a->B)) && !WorkspaceDrawSkins)
+        if ((IsAnchorPartOfBoundary(a->A) || IsAnchorPartOfBoundary(a->B)) && !inspectorSettings.DrawSkins)
             OG_PushLog("Annotation not visible: uses a boundary anchor, but skin rendering is disabled");
 
         return;
@@ -793,130 +740,7 @@ static void SurfaceContextMenu(char *opt, void *param){
 
 
     if (strcmp(opt, "Create Boundary Anchors") == 0){
-        if (s[0]->type == SURFACE_EXTENSIBLE){
-            SelectAnchor(s[0]->anchors[0], false, false);
-            switch (s[0]->anchorAlign){
-                case ANCHOR_ALIGN_MIN:
-                case ANCHOR_ALIGN_MAX:{
-                    float val = s[0]->size.y * (s[0]->anchorAlign == ANCHOR_ALIGN_MIN ? -1:1);
-                    float absVal = GetAnchorAbsValue(s[0]->anchors[0]) + val;
-                    for (Anchor *a = activeTree->anchors; a != NULL; a = a->next){
-                        if (a->type != s[0]->anchors[0]->type) continue;
-                        if (FloatEquals(GetAnchorAbsValue(a), absVal)) return;
-                    }
-
-                    Anchor *newA = AddAnchorOffset(
-                        s[0]->anchors[0],
-                        ResolveAnchorName(s[0]->anchors[0]->name, s[0]->tree), 
-                        val
-                    );
-
-                    AnchorToggleLock(newA);
-                }
-                break;
-
-                case ANCHOR_ALIGN_CENTER:{
-                    float val = s[0]->size.y/2;
-                    float absVal = GetAnchorAbsValue(s[0]->anchors[0]) + val;
-                    for (Anchor *a = activeTree->anchors; a != NULL; a = a->next){
-                        if (a->type != s[0]->anchors[0]->type) continue;
-                        if (FloatEquals(GetAnchorAbsValue(a), absVal)) return;
-                    }
-
-                    for (int i=0; i<2; i++){
-                        Anchor *newA = AddAnchorOffset(
-                            s[0]->anchors[0],
-                            ResolveAnchorName(s[0]->anchors[0]->name, s[0]->tree), 
-                            val * (i==0 ? -1:1)
-                        );
-
-                        AnchorToggleLock(newA);
-                    }
-                }
-                break;
-            }
-            return;
-        }
-        
-        char name[2048] = {0};
-
-        float w = s[0]->size.x;
-        float h = s[0]->size.y;
-
-        Vector2 offset = {
-            s[0]->origin.x, 
-            s[0]->origin.y
-        };
-        
-        if (s[0]->globalRotation != 0 && s[0]->globalRotation != 180){
-            float tmp = w;
-            w = h;
-            h = tmp;
-
-            tmp = offset.x;
-            offset.x = offset.y;
-            offset.y = tmp;
-        }
-
-        if (s[0]->globalRotation == 90 || s[0]->globalRotation == 180){
-            offset.x *= -1;
-            offset.y *= -1;
-        }
-
-        // TOP
-        if (!s[0]->boundariesAnchors.top){
-            sprintf(name, "%s_top", s[0]->name);
-            Anchor *top = AddAnchor(
-                s[0]->tree, 
-                ResolveAnchorName(name, s[0]->tree),
-                ANCHOR_HORIZONTAL, 
-                0
-            );
-            FixAnchorToSurface(top, s[0]);
-            s[0]->boundariesAnchors.top = top;
-        }
-        
-        // BOTTOM
-        if (!s[0]->boundariesAnchors.bottom){
-            sprintf(name, "%s_bottom", s[0]->name);
-            Anchor *bottom = AddAnchor(
-                s[0]->tree, 
-                ResolveAnchorName(name, s[0]->tree), 
-                ANCHOR_HORIZONTAL, 
-                0
-            );
-            FixAnchorToSurface(bottom, s[0]);
-            s[0]->boundariesAnchors.bottom = bottom;
-        }
-        
-        // LEFT
-        if (!s[0]->boundariesAnchors.left){
-            sprintf(name, "%s_left", s[0]->name);
-            Anchor *left = AddAnchor(
-                s[0]->tree, 
-                ResolveAnchorName(name, s[0]->tree), 
-                ANCHOR_VERTICAL, 
-                0
-            );
-            FixAnchorToSurface(left, s[0]);
-            s[0]->boundariesAnchors.left = left;
-        }
-        
-        // RIGHT
-        if (!s[0]->boundariesAnchors.right){
-            sprintf(name, "%s_right", s[0]->name);
-            Anchor *right = AddAnchor(
-                s[0]->tree, 
-                ResolveAnchorName(name, s[0]->tree), 
-                ANCHOR_VERTICAL, 
-                0
-            );
-            FixAnchorToSurface(right, s[0]);
-            s[0]->boundariesAnchors.right = right;
-        }
-        
-        UpdateBoundarieAnchors(s[0]);
-
+        CreateSurfaceBoundarieAnchors(s[0]);
         return;
     }
 

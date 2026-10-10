@@ -4,7 +4,7 @@ import origami.build as origami
 import sys, shutil
 
 project_name = "panelmaster"
-project_version = "BETA1.0.0"
+project_version = "BETA1.1.0"
 
 CC          = "gcc"
 BUILD_DIR   = "build"
@@ -13,8 +13,8 @@ ASSETS_DIR  = "assets"
 STATICS_DIR = "statics"
 
 CFLAGS =  [
-    #"-g", 
-    #"-O0"
+    "-g", 
+    "-O0"
 ]
 
 SRC_DIRS = [
@@ -87,17 +87,17 @@ def statics():
         os.path.join(ASSETS_DIR, "Icon.png")
     ])
 
-def linux():
+def linux(aditional_macros:Dict):
     LIB_PATHS = []
     LINKS = ["-lX11","-lm","-lraylib", "-lGL"]
     LDFLAGS = []
     
     create_dirs([BUILD_DIR])
     all_srcs = [f"{d}/{f}" for d in SRC_DIRS for f in os.listdir(d) if f.endswith(".c")]
-    objs = compile(CC, CFLAGS, MACROS, INCLUDES, all_srcs, BUILD_DIR)
+    objs = compile(CC, CFLAGS, MACROS | aditional_macros, INCLUDES, all_srcs, BUILD_DIR)
     link(CC, objs, LIB_PATHS, LINKS, LDFLAGS, BUILD_DIR, f'"{project_name}"')
 
-def windows():
+def windows(aditional_macros:Dict):
     LIB_PATHS = []
     LINKS = ["-lraylib", "-lgdi32", "-lwinmm"]
     LDFLAGS = ["-mwindows"]
@@ -105,7 +105,7 @@ def windows():
     create_dirs([BUILD_DIR])
     all_srcs = [f"{d}/{f}" for d in SRC_DIRS for f in os.listdir(d) if f.endswith(".c")]
     objs = [_win_compile_icon(os.path.join(ASSETS_DIR, "Icon.ico"), BUILD_DIR, "win_icon")]
-    objs = objs + compile(CC, CFLAGS, MACROS, INCLUDES, all_srcs, BUILD_DIR)
+    objs = objs + compile(CC, CFLAGS, MACROS | aditional_macros, INCLUDES, all_srcs, BUILD_DIR)
     link(CC, objs, LIB_PATHS, LINKS, LDFLAGS, BUILD_DIR, f'"{project_name}"')
 
 
@@ -116,8 +116,8 @@ if __name__ == "__main__":
     statics()
     if "statics" in sys.argv: exit(0)
 
-    if   sys.platform.startswith("linux") : linux()
-    elif sys.platform.startswith("cygwin"): windows()
+    if   sys.platform.startswith("linux") : linux({"ROOT": '"."' if "dist" in sys.argv else '".."'})
+    elif sys.platform.startswith("cygwin"): windows({"ROOT": '"."' if "dist" in sys.argv else '".."'})
     elif sys.platform.startswith("win32") : print("Please run this build using MSYS2-MINGW64 with MinGW-w64 GCC"); exit(1)
     else : print("Non supported platform"); exit(1)
 

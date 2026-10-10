@@ -6,28 +6,34 @@
 #include <raylib.h>
 #include <raymath.h>
 #include <stdio.h>
+#include <stdlib.h>
 #include <string.h>
 #include "microui.h"
 #include "origami.h"
-#include "origami_tools.h"
 #include "viewports.h"
 #include "surfaces.h"
 #include "contextmenus.h"
 #include "utils.h"
 #include "main.h"
+#include "workspace.h"
 
 #define GRID_C CLITERAL(Color){65, 65, 65, 255}
 #define DEFAULT_ZOOM 0.48f
 
+// These come from treeview.c and sidepanel.c
 extern OG_Viewport *TreeView();
-OG_Viewport *TreeViewTabs(int *w);
+extern OG_Viewport *TreeViewTabs(int *w);
+extern OG_Viewport *SidePanel();
+extern OG_Viewport *SidePanelTabs(int *w);
+extern void SidePanelDrawExtensible(Vector2 p1, Vector2 p2);
 
 typedef enum State{
     IDLE_STATE,
     MOVING_SURFACE_STATE,
     MOVING_ANCHOR_STATE,
     MOVING_ANNOTATION_STATE,
-    MOVING_ANNOTATION_EXTENSION_STATE
+    MOVING_ANNOTATION_EXTENSION_STATE,
+    DRAWING_EXTENSIBLE
 } State;
 
 static const char *commands[] = {
@@ -44,43 +50,32 @@ static Anchor *targetAnchor;
 static float targetAnchorDelta;
 static Annotation *targetAnnotation;
 
-static int enableGrid = 0;
-static int enableAnchors = 1;
-static int enableAnnotations = 1;
-int WorkspaceDrawSkins = 1;
-int WorkspaceDrawCutOuts = 0;
-static bool drawZoom = false;
-static float gridSpacing = 50;
+// inspector settings
+InspectorSettings inspectorSettings = {
+    .enableGrid = 0,
+    .enableAnchors = 1,
+    .enableAnnotations = 1,
+    .DrawSkins = 1,
+    .DrawCutOuts = 0,
+    .gridSpacing = 50
+};
 
-static OG_LayoutLine *tabsLine;
-static OG_Viewport *tabsV;
-static int tabsWidth;
+static struct {
+    OG_LayoutLine *line;
+    OG_Viewport *v;
+    int width;
+} treeTabs;
+
+static struct {
+    OG_LayoutLine *line;
+    OG_Viewport *v;
+    int width;
+} sidePanelTabs;
 
 static Vector2 lastRClick;
+static Vector2 *drawingExtensiblePoints[2];
 
-static LinePoints GetAnchorScreenPoints(OG_Viewport *v, Anchor *a){
-    switch (a->type){
-        case ANCHOR_HORIZONTAL:{
-            float p = v->size.height*-1/2;
-            p += GetAnchorAbsValue(a) * v->camera.zoom - v->camera.target.y * v->camera.zoom;
-            
-            return (LinePoints){
-                {0, p},
-                {v->size.width, p}
-            };
-        }
-
-        case ANCHOR_VERTICAL:{
-            float p = v->size.width/2;
-            p += GetAnchorAbsValue(a) * v->camera.zoom - v->camera.target.x * v->camera.zoom;
-
-            return (LinePoints){
-                {p, 0},
-                {p, v->size.height*-1}
-            };
-        }
-    }
-}
+/* <== Utils =======================================================> */
 
 void DrawAnchor(OG_Viewport *v, Anchor *a, Color c){
     LinePoints points = GetAnchorScreenPoints(v, a);
@@ -94,10 +89,9 @@ void DrawAnchor(OG_Viewport *v, Anchor *a, Color c){
     );
 }
 
-/* <== StateMachine ============================================> */
+/* <== StateMachine ================================================> */
 
-void IdleState(OG_Viewport *v){
-    
+static void IdleState(OG_Viewport *v){
     // PAN
     if (OG_IsMouseButtonDown(v, MOUSE_MIDDLE_BUTTON) || OG_IsKeyDown(v, KEY_LEFT_CONTROL)){
         OG_ChangeCursor(v, MOUSE_CURSOR_RESIZE_ALL);
@@ -175,7 +169,7 @@ void IdleState(OG_Viewport *v){
     }
 
     // Grab an anchor
-    if (enableAnchors){
+    if (inspectorSettings.enableAnchors){
         for (Anchor *a = activeTree->anchors; a != NULL; a = a->next){
             if (a->opts & ANCHOR_OPT_HIDDEN) continue;
             
@@ -274,7 +268,7 @@ void IdleState(OG_Viewport *v){
     
 }
 
-void MovingSurfaceState(OG_Viewport *v){
+static void MovingSurfaceState(OG_Viewport *v){
     Vector2 mousePos = OG_GetMouseViewportPosition(v);
     Vector2 sOgPos = targetSurface->pos;
 
@@ -298,7 +292,7 @@ void MovingSurfaceState(OG_Viewport *v){
     }
 }
 
-void MovingAnchorState(OG_Viewport *v){
+static void MovingAnchorState(OG_Viewport *v){
     if (targetAnchor == NULL){
         currentState = IDLE_STATE;
         return;
@@ -322,7 +316,7 @@ void MovingAnchorState(OG_Viewport *v){
     }
 }
 
-void MovingAnnotationState(OG_Viewport *v){
+static void MovingAnnotationState(OG_Viewport *v){
     if (targetAnnotation == NULL){
         currentState = IDLE_STATE;
         return;
@@ -346,7 +340,7 @@ void MovingAnnotationState(OG_Viewport *v){
     }
 }
 
-void MovingAnnotationExtensionState(OG_Viewport *v){
+static void MovingAnnotationExtensionState(OG_Viewport *v){
     if (targetAnnotation == NULL){
         currentState = IDLE_STATE;
         return;
@@ -372,319 +366,46 @@ void MovingAnnotationExtensionState(OG_Viewport *v){
     }
 }
 
-/* <== UI ======================================================> */
-
-static void ChangeAlignContextMenu(int opt, void *param){
-    activeTree->surfaceSelection[0]->anchorAlign = opt;
-}
-
-static void GeneralPropertiesSection(OG_Viewport *v, mu_Context *ctx){
-    if (!mu_header_ex(ctx, "General Properties", MU_OPT_EXPANDED)) return;
-    
-    mu_equal_layout_l_auto(ctx, (const char *[]){"GridStep:", 0}, 0);
-    mu_label(ctx, "GridStep:");
-    mu_number_ex(ctx, &gridSpacing, 0, "%.2fmm", MU_OPT_KEYBOARD_ONLY | MU_OPT_ALIGNCENTER);
-
-    mu_layout_row(ctx, 2, (const int[]){-25, -1}, 0);
-    mu_button_ex(ctx, "GridOn:", 0, MU_OPT_NOINTERACT | MU_OPT_NOFRAME | MU_OPT_ALIGNRIGHT);
-    mu_push_id(ctx, "Workspace_GridOn", 16);
-    mu_checkbox(ctx, "", &enableGrid);
-    mu_pop_id(ctx);
-
-    mu_layout_row(ctx, 2, (const int[]){-25, -1}, 0);
-    mu_button_ex(ctx, "EnableAnchors:", 0, MU_OPT_NOINTERACT | MU_OPT_NOFRAME | MU_OPT_ALIGNRIGHT);
-    mu_push_id(ctx, "Workspace_EnableAnchors", 23);
-    mu_checkbox(ctx, "", &enableAnchors);
-    mu_pop_id(ctx);
-
-    mu_layout_row(ctx, 2, (const int[]){-25, -1}, 0);
-    mu_button_ex(ctx, "EnableAnnotations:", 0, MU_OPT_NOINTERACT | MU_OPT_NOFRAME | MU_OPT_ALIGNRIGHT);
-    mu_push_id(ctx, "Workspace_EnableAnnotations", 27);
-    mu_checkbox(ctx, "", &enableAnnotations);
-    mu_pop_id(ctx);
-    
-    mu_layout_row(ctx, 2, (const int[]){-25, -1}, 0);
-    mu_button_ex(ctx, "DrawSkins:", 0, MU_OPT_NOINTERACT | MU_OPT_NOFRAME | MU_OPT_ALIGNRIGHT);
-    mu_push_id(ctx, "Workspace_DrawSkins", 19);
-    mu_checkbox(ctx, "", &WorkspaceDrawSkins);
-    mu_pop_id(ctx);
-    
-    mu_layout_row(ctx, 2, (const int[]){-25, -1}, 0);
-    mu_button_ex(ctx, "DrawCutOuts:", 0, MU_OPT_NOINTERACT | MU_OPT_NOFRAME | MU_OPT_ALIGNRIGHT);
-    mu_push_id(ctx, "Workspace_DrawCutOuts", 21);
-    mu_checkbox(ctx, "", &WorkspaceDrawCutOuts);
-    mu_pop_id(ctx);
-    
-    mu_layout_row(ctx, 2, (const int[]){70, -1}, 0);
-
-}
-
-static void AnchorPropertiesSection(OG_Viewport *v, mu_Context *ctx){
-    if (!mu_header_ex(ctx, "Anchor", MU_OPT_EXPANDED)) return;
-    
-    // Value
-    {
-        mu_Container *cnt = mu_get_current_container(ctx);
-        int spacing = ctx->style->spacing;
-        int padding = ctx->style->padding;
-
-        int inner_w = cnt->body.w - 2 * padding;
-        int half_w = (inner_w - spacing) / 2;
-
-        int label_w = ctx->text_width(ctx->style->font, "Val:", 2)
-            + ctx->text_width(ctx->style->font, " ", 1);
-
-        int textbox_w = half_w - label_w - spacing;
-
-        int widths[3] = {
-            label_w,
-            textbox_w,
-            half_w
-        };
-
-        mu_layout_row(ctx, 3, widths, 0);
-    }
-
-    mu_label(ctx, "Val:");
-    mu_number_custom(
-        ctx, 
-        activeTree ? (activeTree->anchorSelection[0] ? &activeTree->anchorSelection[0]->val : NULL):NULL, 
-        0, "%.2fmm", 
-        (
-            MU_OPT_KEYBOARD_ONLY | 
-            MU_OPT_ALIGNCENTER | 
-            (CanAnchorValBeChanged(activeTree ? activeTree->anchorSelection[0]:NULL) ? 0:MU_OPT_NOINTERACT)
-        )
-    );
-    
-    
-    // Rotate BTN
-    if (!activeTree || !activeTree->anchorSelection[0])
-        mu_button(ctx, "N/A");
-
-    else if (mu_button(ctx, activeTree->anchorSelection[0]->type == ANCHOR_HORIZONTAL ? "[H] V ":" H [V]")){
-        if (!CanAnchorValBeChanged(activeTree->anchorSelection[0]))
-            OG_PushLog("Can't rotate a fixed anchor!");
-        else if (IsAnchorReferencedByAnchor(activeTree->anchorSelection[0], treeList, treeListQ))
-            OG_PushLog("Can't rotate anchor: it is referenced by another anchor");
-        else if (IsAnchorReferencedBySurface(activeTree->anchorSelection[0]))
-            OG_PushLog("Can't rotate anchor: it is referenced by a surface");
-        else if (activeTree->anchorSelection[0]->constraint != ANCHOR_CONSTRAINT_NONE)
-            OG_PushLog("Can't rotate anchor: it is constrained");
-
-        else activeTree->anchorSelection[0]->type = activeTree->anchorSelection[0]->type == ANCHOR_HORIZONTAL ? ANCHOR_VERTICAL:ANCHOR_HORIZONTAL;
-    }
-
-    // Lock checkbox
-    int locked = (int) IsAnchorLocked(activeTree ? activeTree->anchorSelection[0]:NULL);
-    
-    mu_layout_row(ctx, 2, (const int[]){-25, -1}, 0);
-    mu_button_ex(ctx, "Locked:", 0, MU_OPT_NOINTERACT | MU_OPT_NOFRAME | MU_OPT_ALIGNRIGHT);
-    mu_push_id(ctx, &locked, sizeof(locked));
-    if (mu_checkbox(ctx, "", &locked))
-        AnchorToggleLock(activeTree ? activeTree->anchorSelection[0]:NULL);
-    mu_pop_id(ctx);
-        
-}
-
-static void SurfacePropertiesSection(OG_Viewport *v, mu_Context *ctx){
-    if (!mu_header_ex(ctx, "Surface Properties", MU_OPT_EXPANDED)) return;
-
-    Surface *s = NULL;
-    if (activeTree && activeTree->surfaceSelection[0])
-        s = activeTree->surfaceSelection[0];
-    
-    // Local position
-    mu_equal_layout_l_auto(ctx, (const char *[]){" X:", " Y:", 0}, 0);
-    mu_label(ctx, "X:");
-    mu_number_custom(
-        ctx, s ? &s->pos.x:NULL, 0, "%.2f", 
-        MU_OPT_KEYBOARD_ONLY | MU_OPT_ALIGNCENTER | (s == &activeTree->baseSurface ? MU_OPT_NOINTERACT:0)
-    );
-
-    mu_label(ctx, "Y:");
-    mu_number_custom(
-        ctx, s ? &s->pos.y:NULL, 0, "%.2f", 
-        MU_OPT_KEYBOARD_ONLY | MU_OPT_ALIGNCENTER | (s == &activeTree->baseSurface ? MU_OPT_NOINTERACT:0)
-    );
-
-    // Global position
-    mu_equal_layout_l_auto(ctx, (const char *[]){"GX:", "GY:", 0}, 0);
-    mu_label(ctx, "GX:");
-    Vector2 globalPos = s ? s->globalPos:Vector2Zero();
-    mu_number_custom(
-        ctx, s ? &globalPos.x:NULL, 0, "%.2f", 
-        MU_OPT_KEYBOARD_ONLY | MU_OPT_ALIGNCENTER | MU_OPT_NOINTERACT
-    );
-
-    mu_label(ctx, "GY:");
-    mu_number_custom(
-        ctx, s ? &globalPos.y:NULL, 0, "%.2f", 
-        MU_OPT_KEYBOARD_ONLY | MU_OPT_ALIGNCENTER | MU_OPT_NOINTERACT
-    );
-    
-    // Size
-    mu_equal_layout_l_auto(ctx, (const char *[]){" W:", " H:", 0}, 0);
-    mu_label(ctx, "W:");
-    mu_number_custom(
-        ctx, s ? &s->size.x:NULL, 0, "%.2f", 
-        MU_OPT_KEYBOARD_ONLY | MU_OPT_ALIGNCENTER | MU_OPT_NOINTERACT
-    );
-
-    mu_label(ctx, "H:");
-    mu_number_custom(
-        ctx, s ? &s->size.y:NULL, 0, "%.2f", 
-        MU_OPT_KEYBOARD_ONLY | MU_OPT_ALIGNCENTER | MU_OPT_NOINTERACT
-    );
-
-    // Rotation
-    { // implmentation taken mu_equal_layout_l_auto
-        mu_Container *cnt = mu_get_current_container(ctx);
-        int spacing = ctx->style->spacing;
-        int padding = ctx->style->padding;
-
-        int inner_w = cnt->body.w - 2 * padding;
-        int half_w = (inner_w - spacing) / 2;
-
-        int space_w = ctx->text_width(ctx->style->font, " ", 1);
-        int label_w = ctx->text_width(ctx->style->font, " A:", 2) + ctx->text_width(ctx->style->font, " ", 1);
-
-        int textbox_w = half_w - label_w - spacing;
-        int button_w = (half_w - spacing) / 2;
-
-        int widths[4] = {
-            label_w,
-            textbox_w,
-            button_w,
-            half_w - spacing - button_w
-        };
-
-        mu_layout_row(ctx, 4, widths, 0);
-    }
-        
-    mu_label(ctx, "A:");
-    mu_number_custom(
-        ctx, activeTree ? (activeTree->surfaceSelection[0] ? &activeTree->surfaceSelection[0]->rotation : NULL):NULL, 
-        0, "%.2f°", MU_OPT_KEYBOARD_ONLY | MU_OPT_ALIGNCENTER | MU_OPT_NOINTERACT
-    );
-
-    if (mu_button(ctx,s ? ( s->type == SURFACE_COMPONENT ? "-90°":"-180°"):"-90°") && s){
-        if (s != &activeTree->baseSurface){
-            s->rotation -= s->type == SURFACE_COMPONENT ? 90:180;
-            if (s->rotation < 0)
-                s->rotation += 360;
-        }
-
-        else OG_PushLog("Base surface can't be rotated");
-    }
-
-    if (mu_button(ctx, s ? (s->type == SURFACE_COMPONENT ?  "+90°":"+180°"):"+90°") && s){
-        if (s != &activeTree->baseSurface){
-            s->rotation += s->type == SURFACE_COMPONENT ? 90:180;
-            if (s->rotation >= 360)
-                s->rotation -= 360;
-        }
-
-        else OG_PushLog("Base surface can't be rotated");
-    }
-
-    if (s){
-        mu_layout_row(ctx, 2, (const int[]){-25, -1}, 0);
-
-        // X fix checkbox
-        int xFixed = s->opts & SURFACE_OPT_FIXED_X;
-        mu_button_ex(ctx, "Fixed Local X:", 0, MU_OPT_NOINTERACT | MU_OPT_NOFRAME | MU_OPT_ALIGNRIGHT);
-        mu_push_id(ctx, &xFixed, sizeof(xFixed));
-        if (mu_checkbox(ctx, "", &xFixed))
-            s->opts ^= SURFACE_OPT_FIXED_X;
-        mu_pop_id(ctx);
-
-        // Y fix checkbox
-        int yFixed = s->opts & SURFACE_OPT_FIXED_Y;
-        mu_button_ex(ctx, "Fixed Local Y:", 0, MU_OPT_NOINTERACT | MU_OPT_NOFRAME | MU_OPT_ALIGNRIGHT);
-        mu_push_id(ctx, &yFixed, sizeof(yFixed));
-        if (mu_checkbox(ctx, "", &yFixed))
-            s->opts ^= SURFACE_OPT_FIXED_Y;
-        mu_pop_id(ctx);
-
-        // Show/Hide checkbox
-        int hidden = s->opts & SURFACE_OPT_HIDDEN;
-        mu_button_ex(ctx, "Hidden:", 0, MU_OPT_NOINTERACT | MU_OPT_NOFRAME | MU_OPT_ALIGNRIGHT);
-        mu_push_id(ctx, &hidden, sizeof(hidden));
-        if (mu_checkbox(ctx, "", &hidden))
-            ShowHideSurface(s);
-        mu_pop_id(ctx);
-
+static void DrawingExtensibleState(OG_Viewport *v){
+    // PAN
+    if (OG_IsMouseButtonDown(v, MOUSE_MIDDLE_BUTTON) || OG_IsKeyDown(v, KEY_LEFT_CONTROL)){
+        OG_ChangeCursor(v, MOUSE_CURSOR_RESIZE_ALL);
+        OG_ViewportUpdatePan(v);
+        return;
     }
     
-    // Anchor Setup SubSection
-    if (s){
-        mu_vertical_space(ctx, 5);
-        mu_layout_row(ctx, 1, (const int[]){-1}, 15);
-        mu_label(ctx, "Anchor Setup:");
-        
-        mu_layout_row(ctx, 1, (const int[]){-1}, 95);
-        mu_begin_panel(ctx, "AnchorSetup");
-        
-        switch (s->type){
-            case SURFACE_EXTENSIBLE:{
-                mu_equal_layout_l_auto(ctx, (const char*[]){"LCut:","RCut:",0}, 0);
-                
-                mu_label(ctx, "LCut:");
-                mu_number_custom(
-                    ctx,
-                    &s->leftCut, 
-                    0, "%.1fmm", MU_OPT_KEYBOARD_ONLY | MU_OPT_ALIGNCENTER
-                );
+    OG_ViewportUpdateZoom(v);
+    Vector2 mousePos = OG_GetMouseViewportPosition(v);
 
-                mu_label(ctx, "RCut:");
-                mu_number_custom(
-                    ctx,
-                    &s->rightCut, 
-                    0, "%.1fmm", MU_OPT_KEYBOARD_ONLY | MU_OPT_ALIGNCENTER
-                );
+    if (OG_IsMouseButtonPressed(v, MOUSE_LEFT_BUTTON)){
+        drawingExtensiblePoints[0] = calloc(1, sizeof(Vector2));
+        *drawingExtensiblePoints[0] = mousePos;
+    }
+
+    if (drawingExtensiblePoints[0]){
+        if (!drawingExtensiblePoints[1])
+            drawingExtensiblePoints[1] = calloc(1, sizeof(Vector2));
+
+        Vector2 p0 = *drawingExtensiblePoints[0];
+        Vector2 p1 = mousePos;
+
+        if (fabsf(p1.x - p0.x) > fabsf(p1.y - p0.y)) p1.y = p0.y; // horizontal
+        else p1.x = p0.x; // vertical
             
-            
-                mu_layout_row(ctx, 2, (const int[]){90, -1}, 0);
-                mu_label(ctx, "AxisAlign:");
-                const char *align = GetAnchorAlignStr(s);
-                if (mu_button(ctx, align))
-                    OG_OpenContextMenu(&ChangeAlignContextMenu, NULL, NULL, 3, "CENTER", "MIN", "MAX");
-                
-                mu_vertical_space(ctx, 5);
-                
-                mu_layout_row(ctx, 2, (const int[]){50, -1}, 10);
-                mu_label(ctx, "Axis:");
-                mu_label(ctx, s->anchors[0] ? s->anchors[0]->name:"N/A");
-
-                mu_label(ctx, "Start:");
-                mu_label(ctx, s->anchors[1] ? s->anchors[1]->name:"N/A");
-
-                mu_label(ctx, "End:");
-                mu_label(ctx, s->anchors[2] ? s->anchors[2]->name:"N/A");    
-                break;
-            }
-
-            case SURFACE_COMPONENT:{
-                mu_layout_row(ctx, 1, (const int[]){-1}, 10);
-                mu_label(ctx, "Fixed Global X to:");
-                mu_label(ctx, s->anchors[0] ? s->anchors[0]->name:"N/A");
-                mu_vertical_space(ctx, 10);
-
-                mu_label(ctx, "Fixed Global Y to:");
-                mu_label(ctx, s->anchors[1] ? s->anchors[1]->name:"N/A");
-                break;
-            }
-        }
-        
-        mu_end_panel(ctx);
+        *drawingExtensiblePoints[1] = p1;
     }
-}
 
-static void UI(OG_Viewport *v, mu_Context *ctx){
-    GeneralPropertiesSection(v, ctx);
-    AnchorPropertiesSection(v, ctx);
-    SurfacePropertiesSection(v, ctx);
+    if (OG_IsMouseButtonReleased(v, MOUSE_LEFT_BUTTON) && drawingExtensiblePoints[0] && drawingExtensiblePoints[1]){
+        SidePanelDrawExtensible(*drawingExtensiblePoints[0], *drawingExtensiblePoints[1]);
+        free(drawingExtensiblePoints[0]);
+        free(drawingExtensiblePoints[1]);
+        drawingExtensiblePoints[0] = NULL;
+        drawingExtensiblePoints[1] = NULL;
+        currentState = IDLE_STATE;
+        return;
+    }
+    
+    OG_ChangeCursor(v, MOUSE_CURSOR_CROSSHAIR);
 }
 
 /* <== Callbacks ===============================================> */
@@ -695,9 +416,6 @@ static const char **GetCmds(){
 
 static void ExecCmd(OG_Viewport *v, int argc, char **argv){
     if (argc <= 0) return;
-    if (strcmp(argv[0], "draw_zoom") == 0){
-        drawZoom = drawZoom ? false : true;
-    }
 }
 
 static void Render(OG_Viewport *v){}
@@ -728,7 +446,7 @@ static void RenderOverlay(OG_Viewport *v){
     EndTextureMode(); // leaves the original "viewport texture"
     BeginTextureMode(gridTex);
     ClearBackground(OG_VIEWPORT_BG_C);
-    DrawViewportGrid(v, gridSpacing, GRID_C, !enableGrid);
+    DrawViewportGrid(v, inspectorSettings.gridSpacing, GRID_C, !inspectorSettings.enableGrid);
     EndTextureMode();
     
     BeginTextureMode(ghostTex);
@@ -758,8 +476,8 @@ static void RenderOverlay(OG_Viewport *v){
             ghostTreeFlipY,
             false,
             true,
-            WorkspaceDrawSkins,
-            WorkspaceDrawCutOuts,
+            inspectorSettings.DrawSkins,
+            inspectorSettings.DrawCutOuts,
             false
         );
 
@@ -775,14 +493,6 @@ static void RenderOverlay(OG_Viewport *v){
         WHITE
     );
     
-    // Draw zoom (debug only)
-    if (drawZoom){
-        char zoom_text[256];
-        memset(zoom_text, '\0', 256);
-        sprintf(zoom_text, "%f", v->camera.zoom);
-        DrawText(zoom_text, 0, 0, 20, GREEN);
-    }
-
     if (activeTree){
         DrawSurfaceTree(
             v, activeTree, lod,
@@ -795,13 +505,13 @@ static void RenderOverlay(OG_Viewport *v){
             false, false,
             false,
             false,
-            WorkspaceDrawSkins,
-            WorkspaceDrawCutOuts,
+            inspectorSettings.DrawSkins,
+            inspectorSettings.DrawCutOuts,
             false
         );
         
         // Draw Anchors
-        if (enableAnchors){
+        if (inspectorSettings.enableAnchors){
             Color primary   = { 255, 255, 0, 117 };
             Color secondary = { 200, 140, 0, 117 };
             Color others    = { 205, 205, 240, 117 };
@@ -821,10 +531,10 @@ static void RenderOverlay(OG_Viewport *v){
         }
 
         // Draw annotations 
-        if (enableAnnotations){        
+        if (inspectorSettings.enableAnnotations){        
             for (Annotation *ann = activeTree->annotations; ann != NULL; ann = ann->next){
-                if ((IsAnchorPartOfCutout(ann->A) || IsAnchorPartOfCutout(ann->B)) && !WorkspaceDrawCutOuts) continue;
-                if ((IsAnchorPartOfBoundary(ann->A) || IsAnchorPartOfBoundary(ann->B)) && !WorkspaceDrawSkins) continue;
+                if ((IsAnchorPartOfCutout(ann->A) || IsAnchorPartOfCutout(ann->B)) && !inspectorSettings.DrawCutOuts) continue;
+                if ((IsAnchorPartOfBoundary(ann->A) || IsAnchorPartOfBoundary(ann->B)) && !inspectorSettings.DrawSkins) continue;
 
                 DrawAnnotation(
                     v, ann, PINK, 
@@ -835,6 +545,21 @@ static void RenderOverlay(OG_Viewport *v){
                 );
             }
         }
+    }
+
+    // Draw the "drawing extensible" points and line
+    if (currentState == DRAWING_EXTENSIBLE && drawingExtensiblePoints[0] && drawingExtensiblePoints[1]){
+        Vector2 p0 = GetWorldToScreen2D(*drawingExtensiblePoints[0], v->camera);
+        Vector2 p1 = GetWorldToScreen2D(*drawingExtensiblePoints[1], v->camera);
+
+        const float radius = 3.0f;
+        const float lineWidth = 2.0f;
+        const Color c = {0, 220, 255, 255};
+
+        DrawLineEx(p0, p1, lineWidth, c);
+
+        DrawCircleV(p0, radius, c);
+        DrawCircleV(p1, radius, c);
     }
 
     // Draw camera zoom and offset
@@ -880,10 +605,16 @@ static void Init(OG_Viewport *v){
 }
 
 static void Update(OG_Viewport *v){
-    if (tabsV->size.width < tabsWidth)
-        tabsLine->t = GetRatio(32, v->size.height*-1);
-    else tabsLine->t = GetRatio(20, v->size.height*-1);
-    
+    // Autoadjust the treeview tabs height
+    if (treeTabs.v->size.width < treeTabs.width)
+        treeTabs.line->t = GetRatio(32, v->size.height*-1);
+    else treeTabs.line->t = GetRatio(20, v->size.height*-1);
+
+    // Autoadjust the sidepanel tabs height
+    if (sidePanelTabs.v->size.width < sidePanelTabs.width)
+        sidePanelTabs.line->t = GetRatio(32, v->size.height*-1);
+    else sidePanelTabs.line->t = GetRatio(20, v->size.height*-1);
+
     if (v->hidden) return;
     switch (currentState){
         case IDLE_STATE:                        IdleState(v);                      break;
@@ -891,7 +622,28 @@ static void Update(OG_Viewport *v){
         case MOVING_ANCHOR_STATE:               MovingAnchorState(v);              break;
         case MOVING_ANNOTATION_STATE:           MovingAnnotationState(v);          break;
         case MOVING_ANNOTATION_EXTENSION_STATE: MovingAnnotationExtensionState(v); break;
+        case DRAWING_EXTENSIBLE:                DrawingExtensibleState(v);         break;
     }
+}
+
+void WorkspaceStartDrawingExtensible(){
+    targetSurface = NULL;
+    targetAnchor = NULL;
+    activeTree->surfaceSelection[0] = NULL;
+    activeTree->surfaceSelection[1] = NULL;
+    activeTree->anchorSelection[0] = NULL;
+    activeTree->anchorSelection[1] = NULL;
+    activeTree->anchorSelection[2] = NULL;
+
+    currentState = DRAWING_EXTENSIBLE;
+}
+
+void WorkspaceCancelDrawingExtensible(){
+    currentState = IDLE_STATE;
+}
+
+bool WorkspaceIsDrawingExtensible(){
+    return currentState == DRAWING_EXTENSIBLE;
 }
 
 void Workspace(){
@@ -907,11 +659,18 @@ void Workspace(){
     );
 
     // LINES
-    tabsLine = OG_LayoutAddLine(
+    treeTabs.line = OG_LayoutAddLine(
         l, OG_LAYOUT_LINE_H, 
         GetRatio(20, height)
     );
-    tabsLine->fixed = true;
+    treeTabs.line->fixed = true;
+
+    sidePanelTabs.line = OG_LayoutAddLine(
+        l, OG_LAYOUT_LINE_H, 
+        GetRatio(20, height)
+    );
+    sidePanelTabs.line->fixed = true;
+
     OG_LayoutLine *lefttLine = OG_LayoutAddLine(l, OG_LAYOUT_LINE_V, 0.225f);
     OG_LayoutLine *rightLine = OG_LayoutAddLine(l, OG_LAYOUT_LINE_V, 0.79f);
 
@@ -919,23 +678,22 @@ void Workspace(){
     OG_LayoutContainer *treeTabsContainer = OG_LayoutAddContainer(
         l, 
         &l->lines[OG_LAYOUT_LINE_TOP], 
-        tabsLine, 
+        treeTabs.line, 
         &l->lines[OG_LAYOUT_LINE_LEFT], 
         lefttLine
     );
 
-    tabsV = TreeViewTabs(&tabsWidth);
-    OG_LayoutAddViewport(treeTabsContainer, tabsV);
+    treeTabs.v = TreeViewTabs(&treeTabs.width);
+    OG_LayoutAddViewport(treeTabsContainer, treeTabs.v);
 
     OG_LayoutContainer *treeContainer = OG_LayoutAddContainer(
         l, 
-        tabsLine, 
+        treeTabs.line, 
         &l->lines[OG_LAYOUT_LINE_BOTTOM], 
         &l->lines[OG_LAYOUT_LINE_LEFT], 
         lefttLine
     );
 
-    
     OG_LayoutAddViewport(treeContainer, TreeView());
 
     // MainSection
@@ -967,34 +725,26 @@ void Workspace(){
         )
     );
 
-    // Inspector
-    OG_LayoutContainer *inspectorContainer = OG_LayoutAddContainer(
+    // SidePanel
+    OG_LayoutContainer *inspectorTabsContainer = OG_LayoutAddContainer(
         l, 
         &l->lines[OG_LAYOUT_LINE_TOP], 
+        sidePanelTabs.line, 
+        rightLine,
+        &l->lines[OG_LAYOUT_LINE_RIGHT]
+    );
+
+    sidePanelTabs.v = SidePanelTabs(&sidePanelTabs.width);
+    OG_LayoutAddViewport(inspectorTabsContainer, sidePanelTabs.v);
+    
+    OG_LayoutContainer *inspectorContainer = OG_LayoutAddContainer(
+        l, 
+        sidePanelTabs.line, 
         &l->lines[OG_LAYOUT_LINE_BOTTOM], 
         rightLine,
         &l->lines[OG_LAYOUT_LINE_RIGHT]
     );
 
-    OG_LayoutAddViewport(
-        inspectorContainer,
-        OG_InitViewport(
-            "Workspace_Inspector", 
-            (Rectangle){}, 
-            1.0f, 1.0f, 
-            true, false, false, 
-            NULL, 
-            NULL, 
-            NULL, 
-            NULL, 
-            NULL, 
-            NULL, 
-            NULL, 
-            &UI, 
-            NULL, 
-            NULL
-        )
-    );
-    
+    OG_LayoutAddViewport(inspectorContainer, SidePanel());
     
 }

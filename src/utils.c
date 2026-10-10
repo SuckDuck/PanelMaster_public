@@ -377,6 +377,20 @@ bool IsVertical(float rotation){
 	return !IsHorizontal(rotation);
 }
 
+void DrawTextureTile(Texture2D texture, int indexX, int indexY, int posX, int posY, int divisions){
+    float tileWidth  = (float)texture.width / divisions;
+    float tileHeight = (float)texture.height / divisions;
+
+    Rectangle source = {
+        indexX * tileWidth,
+        indexY * tileHeight,
+        tileWidth,
+        tileHeight
+    };
+
+    DrawTextureRec(texture, source, (Vector2){ posX, posY }, WHITE);
+}
+
 int mu_number_custom(mu_Context *ctx, mu_Real *value, mu_Real step, const char *fmt, int opt){
 	float _;
 	int rs = mu_number_ex(ctx, value ? value:&_, step, value ? fmt:"n/a", opt | (value ? 0:MU_OPT_NOINTERACT));

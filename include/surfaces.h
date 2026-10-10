@@ -1,9 +1,13 @@
+// Copyright 2026 Esteban Huertas
+// SPDX-License-Identifier: Apache-2.0
+
 #ifndef SURFACES_H
 #define SURFACES_H
 
 #include <raylib.h>
 #include <stdint.h>
 #include "origami.h"
+#include "utils.h"
 
 #define SURFACE_SELECTION_BUF_LEN 2
 #define ANCHOR_SELECTION_BUF_LEN 4
@@ -222,6 +226,7 @@ bool IsSurfaceHidden(Surface *s);
 void HideSurface(Surface *s);
 void ShowSurface(Surface *s);
 void ShowHideSurface(Surface *s);
+void CreateSurfaceBoundarieAnchors(Surface *s);
 
 // Anchors
 const char *GetAnchorTypeStr(AnchorType t);
@@ -261,6 +266,7 @@ char *ResolveAnchorName(char *ogName, SurfaceTree *st);
 void Sort3Anchors(Anchor **anchors);
 bool IsAnchorPartOfCutout(Anchor *a);
 bool IsAnchorPartOfBoundary(Anchor *a);
+LinePoints GetAnchorScreenPoints(OG_Viewport *v, Anchor *a);
 
 // Annotations
 Annotation *AddAnnotation(SurfaceTree *tree, Anchor *A, Anchor *B);

@@ -4,146 +4,7 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>PanelMaster - Help</title>
-
-    <style>
-        body {
-            font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Helvetica, Arial, sans-serif;
-            line-height: 1.6;
-            color: #24292f;
-            background: #ffffff;
-            max-width: 900px;
-            margin: 0 auto;
-            padding: 40px 24px;
-        }
-
-        h1 {
-            padding-bottom: 0.3em;
-            border-bottom: 1px solid #d0d7de;
-        }
-
-        h2 {
-            margin-top: 2em;
-            padding-bottom: 0.3em;
-            border-bottom: 1px solid #d0d7de;
-        }
-
-        h3 {
-            margin-top: 1.8em;
-        }
-
-        p {
-            margin: 1em 0;
-        }
-
-        code {
-            padding: 0.2em 0.4em;
-            font-size: 85%;
-            background: #f6f8fa;
-            border-radius: 6px;
-        }
-
-        blockquote {
-            margin: 1em 0;
-            padding: 0 1em;
-            color: #57606a;
-            border-left: 4px solid #d0d7de;
-        }
-
-        img,
-        video {
-            display: block;
-            max-width: 100%;
-            height: auto;
-            margin: 20px 0;
-        }
-
-        ul {
-            padding-left: 2em;
-        }
-
-        li {
-            margin: 0.4em 0;
-        }
-
-        strong {
-            font-weight: 600;
-        }
-
-        #toc {
-            background: #f6f8fa;
-            border: 1px solid #d0d7de;
-            border-radius: 6px;
-            padding: 12px 16px 12px 36px;
-            margin: 16px 0 28px;
-        }
-
-        #toc li {
-            margin: 1px 0;
-            line-height: 1.35;
-        }
-
-        #toc a {
-            text-decoration: none;
-        }
-
-        #toc a:hover {
-            text-decoration: underline;
-        }
-
-        .language-button {
-            position: fixed;
-            top: 20px;
-            right: 20px;
-            z-index: 1000;
-            display: block;
-        }
-
-        .language-button img {
-            width: 40px;
-            height: 40px;
-            margin: 0;
-            cursor: pointer;
-        }
-
-        .top-button {
-            position: fixed;
-            bottom: 24px;
-            right: 24px;
-            z-index: 1000;
-
-            width: 42px;
-            height: 42px;
-
-            display: flex;
-            align-items: center;
-            justify-content: center;
-
-            background: #ffffff;
-            border: 1px solid #d0d7de;
-            border-radius: 50%;
-
-            color: #393f45;
-            text-decoration: none;
-            font-size: 22px;
-            font-weight: 600;
-            line-height: 1;
-
-            box-shadow: 0 3px 8px rgba(0, 0, 0, 0.15);
-
-            transition:
-                background 0.15s ease,
-                color 0.15s ease,
-                box-shadow 0.15s ease,
-                transform 0.15s ease;
-        }
-
-        .top-button:hover {
-            background: #f6f8fa;
-            color: #24292f;
-            box-shadow: 0 5px 12px rgba(0, 0, 0, 0.20);
-            transform: translateY(-2px);
-        }
-    </style>
+    <link rel="stylesheet" href="style.css">
 </head>
 
 <body>
@@ -177,7 +38,7 @@
 
 <p>This is the initial screen you see upon launching PanelMaster:</p>
 
-<img src="quickstart/firstView.png" alt="FirstView" width="800">
+<img src="media/firstView.png" alt="FirstView" width="800">
 
 <p>
     To create your first panel, select <strong>File &gt; New Panel</strong>
@@ -191,7 +52,7 @@
     <code>components/cabinets</code>.
 </blockquote>
 
-<img src="quickstart/panelTemplate.png" alt="SelectTemplate" width="600">
+<img src="media/panelTemplate.png" alt="SelectTemplate" width="600">
 
 <p>
     If the file is valid, the Workspace will open with the cabinet in it.
@@ -202,7 +63,7 @@
     bottom-left corner.
 </p>
 
-<img src="quickstart/workspace.png" alt="Workspace" width="800">
+<img src="media/workspace.png" alt="Workspace" width="800">
 
 <p>
     The Workspace is divided into three main areas: the Treeview, the Canvas,
@@ -259,6 +120,30 @@
     entire blocks of components at once.
 </p>
 
+
+<div class="new-feature-box"> 
+    <span class="new-feature">NEW · VBETA1.1.0</span> : 
+    <ul> 
+        <li> 
+            To quickly add a surface, open the <strong>Components</strong> tab in the right sidebar. 
+            The component library is organized into categories. Find the desired component, then click 
+            and hold it while moving the mouse to the intended parent surface. Release the mouse button 
+            to place it. 
+            
+            <blockquote> 
+                When the parent is a base surface or an extensible surface, the new component will be 
+                placed at the mouse position. When the parent is another component, the new component 
+                will be automatically positioned to the right of it. 
+            </blockquote> 
+        </li> 
+    </ul> 
+
+    <video autoplay loop muted playsinline width="800">
+        <source src="media/surfaces/quickadd.mp4" type="video/mp4">
+        Your browser does not support HTML5 video playback.
+    </video>
+</div>
+
 <ul>
     <li>
         To add a surface, right-click on the intended parent surface and select
@@ -283,7 +168,7 @@
 </ul>
 
 <video autoplay loop muted playsinline width="800">
-    <source src="quickstart/surfaces/add_move_delete.mp4" type="video/mp4">
+    <source src="media/surfaces/add_move_delete.mp4" type="video/mp4">
     Your browser does not support HTML5 video playback.
 </video>
 
@@ -342,7 +227,7 @@
 </ul>
 
 <video autoplay loop muted playsinline width="800">
-    <source src="quickstart/surfaces/duplicate_align_flat.mp4" type="video/mp4">
+    <source src="media/surfaces/duplicate_align_flat.mp4" type="video/mp4">
     Your browser does not support HTML5 video playback.
 </video>
 
@@ -374,7 +259,7 @@
 </ul>
 
 <video autoplay loop muted playsinline width="800">
-    <source src="quickstart/surfaces/shift_reparent.mp4" type="video/mp4">
+    <source src="media/surfaces/shift_reparent.mp4" type="video/mp4">
     Your browser does not support HTML5 video playback.
 </video>
 
@@ -417,7 +302,7 @@
 </ul>
 
 <video autoplay loop muted playsinline width="800">
-    <source src="quickstart/anchors/new_multiple_delete.mp4" type="video/mp4">
+    <source src="media/anchors/new_multiple_delete.mp4" type="video/mp4">
     Your browser does not support HTML5 video playback.
 </video>
 
@@ -445,7 +330,7 @@
 </ul>
 
 <video autoplay loop muted playsinline width="800">
-    <source src="quickstart/anchors/center_mirror_free.mp4" type="video/mp4">
+    <source src="media/anchors/center_mirror_free.mp4" type="video/mp4">
     Your browser does not support HTML5 video playback.
 </video>
 
@@ -459,6 +344,41 @@
     standard parenting capabilities: they can be parented to other surfaces, and
     child surfaces can be parented to them.
 </p>
+
+<div class="new-feature-box">
+    <span class="new-feature">NEW · VBETA1.1.0</span> :
+    <ul>
+        <li>
+            To quickly add an extensible surface, open the <strong>Extensibles</strong>
+            tab in the right sidebar, where the available extensible surfaces are listed.
+            Click the desired extensible surface to select it and enter Extensible Draw
+            mode. Then, click and drag in the Workspace Canvas to define the desired path
+            of the extensible surface.
+
+            Clicking the currently selected extensible surface again will deselect it
+            and exit Extensible Draw mode.
+
+            <blockquote>
+                The new extensible surface will be positioned between the nearest
+                compatible anchors along the drawn path. If no suitable anchors are
+                found, an error message will be displayed and Extensible Draw mode
+                will be exited.
+            </blockquote>
+        </li>
+
+        <li>
+            To automatically create anchors when no suitable anchors are found,
+            enable the <strong>Create Anchors</strong> checkbox. In this case, new
+            anchors will be created at the required positions instead of displaying
+            an error.
+        </li>
+    </ul>
+
+    <video autoplay loop muted playsinline width="800">
+        <source src="media/surfaces/extensiblesquickadd.mp4" type="video/mp4">
+        Your browser does not support HTML5 video playback.
+    </video>
+</div>
 
 <ul>
     <li>
@@ -496,7 +416,7 @@
 </ul>
 
 <video autoplay loop muted playsinline width="800">
-    <source src="quickstart/surfaces/extensible_basic.mp4" type="video/mp4">
+    <source src="media/surfaces/extensible_basic.mp4" type="video/mp4">
     Your browser does not support HTML5 video playback.
 </video>
 
@@ -529,7 +449,7 @@
 </ul>
 
 <video autoplay loop muted playsinline width="800">
-    <source src="quickstart/surfaces/extensible_cuts_frame.mp4" type="video/mp4">
+    <source src="media/surfaces/extensible_cuts_frame.mp4" type="video/mp4">
     Your browser does not support HTML5 video playback.
 </video>
 
@@ -586,7 +506,7 @@
 </ul>
 
 <video autoplay loop muted playsinline width="800">
-    <source src="quickstart/annotations.mp4" type="video/mp4">
+    <source src="media/annotations.mp4" type="video/mp4">
     Your browser does not support HTML5 video playback.
 </video>
 
@@ -620,7 +540,7 @@
 </ul>
 
 <video autoplay loop muted playsinline width="800">
-    <source src="quickstart/lock_hide_anchors_surfaces.mp4" type="video/mp4">
+    <source src="media/lock_hide_anchors_surfaces.mp4" type="video/mp4">
     Your browser does not support HTML5 video playback.
 </video>
 
@@ -649,7 +569,7 @@
 </ul>
 
 <video autoplay loop muted playsinline width="800">
-    <source src="quickstart/anchors/set_as.mp4" type="video/mp4">
+    <source src="media/anchors/set_as.mp4" type="video/mp4">
     Your browser does not support HTML5 video playback.
 </video>
 
@@ -687,7 +607,7 @@
 </ul>
 
 <video autoplay loop muted playsinline width="800">
-    <source src="quickstart/anchors/fix_to_surface.mp4" type="video/mp4">
+    <source src="media/anchors/fix_to_surface.mp4" type="video/mp4">
     Your browser does not support HTML5 video playback.
 </video>
 
@@ -729,7 +649,7 @@
 </ul>
 
 <video autoplay loop muted playsinline width="800">
-    <source src="quickstart/ghost_boundaries_cutouts.mp4" type="video/mp4">
+    <source src="media/ghost_boundaries_cutouts.mp4" type="video/mp4">
     Your browser does not support HTML5 video playback.
 </video>
 
@@ -753,7 +673,7 @@
 </ul>
 
 <video autoplay loop muted playsinline width="800">
-    <source src="quickstart/anchors/projections.mp4" type="video/mp4">
+    <source src="media/anchors/projections.mp4" type="video/mp4">
     Your browser does not support HTML5 video playback.
 </video>
 
@@ -768,7 +688,7 @@
 </ul>
 
 <video autoplay loop muted playsinline width="800">
-    <source src="quickstart/bonus.mp4" type="video/mp4">
+    <source src="media/bonus.mp4" type="video/mp4">
     Your browser does not support HTML5 video playback.
 </video>
 
@@ -834,7 +754,7 @@
     </li>
 </ul>
 
-<img src="quickstart/documentEditor.png" alt="Workspace" width="800">
+<img src="media/documentEditor.png" alt="Workspace" width="800">
 
 <p><strong>Usage:</strong></p>
 
@@ -858,7 +778,7 @@
 </ul>
 
 <video autoplay loop muted playsinline width="800">
-    <source src="quickstart/documentEditor/newpage_changesize.mp4" type="video/mp4">
+    <source src="media/documentEditor/newpage_changesize.mp4" type="video/mp4">
     Your browser does not support HTML5 video playback.
 </video>
 
@@ -923,7 +843,7 @@
 </ul>
 
 <video autoplay loop muted playsinline width="800">
-    <source src="quickstart/documentEditor/add_surface_surface_props.mp4" type="video/mp4">
+    <source src="media/documentEditor/add_surface_surface_props.mp4" type="video/mp4">
     Your browser does not support HTML5 video playback.
 </video>
 
@@ -973,7 +893,7 @@
 </ul>
 
 <video autoplay loop muted playsinline width="800">
-    <source src="quickstart/documentEditor/text.mp4" type="video/mp4">
+    <source src="media/documentEditor/text.mp4" type="video/mp4">
     Your browser does not support HTML5 video playback.
 </video>
 
@@ -997,7 +917,7 @@
 </ul>
 
 <video autoplay loop muted playsinline width="800">
-    <source src="quickstart/documentEditor/stickers.mp4" type="video/mp4">
+    <source src="media/documentEditor/stickers.mp4" type="video/mp4">
     Your browser does not support HTML5 video playback.
 </video>
 
@@ -1025,7 +945,7 @@
 </ul>
 
 <video autoplay loop muted playsinline width="800">
-    <source src="quickstart/documentEditor/delete_duplicate_shift.mp4" type="video/mp4">
+    <source src="media/documentEditor/delete_duplicate_shift.mp4" type="video/mp4">
     Your browser does not support HTML5 video playback.
 </video>
 
@@ -1063,7 +983,7 @@
 </blockquote>
 
 <video autoplay loop muted playsinline width="800">
-    <source src="quickstart/dxf_svg.mp4" type="video/mp4">
+    <source src="media/dxf_svg.mp4" type="video/mp4">
     Your browser does not support HTML5 video playback.
 </video>
 
@@ -1094,7 +1014,7 @@
     It is divided into three main areas: the TitleBlock List, the Canvas, and the Inspector.
 </p>
 
-<img src="quickstart/TitleBlockEditor.png" alt="Workspace" width="800">
+<img src="media/TitleBlockEditor.png" alt="Workspace" width="800">
 
 <br>
 
@@ -1185,15 +1105,27 @@
 </ul>
 
 <video autoplay loop muted playsinline width="800">
-    <source src="quickstart/TitleBlockEditor.mp4" type="video/mp4">
+    <source src="media/TitleBlockEditor.mp4" type="video/mp4">
     Your browser does not support HTML5 video playback.
 </video>
 
 <a href="es.html" class="language-button">
-    <img src="es.png" alt="Español">
+    <img src="media/es.png" alt="Español">
 </a>
 
 <a href="#top" class="top-button" aria-label="Back to top">↑</a>
+
+<script>
+    const script = document.currentScript;
+    fetch("../extras.html")
+        .then(r => r.ok ? r.text() : "")
+        .then(html => {
+            if (html) {
+                script.insertAdjacentHTML("beforebegin", html);
+            }
+        })
+        .catch(() => {});
+</script>
 
 </body>
 </html>

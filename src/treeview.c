@@ -13,13 +13,7 @@
 #include "utils.h"
 #include "contextmenus.h"
 #include "main.h"
-
-typedef struct Tab {
-    const char *name;
-    int labelWidth;
-    float contentSize;
-    float scroll;
-} Tab;
+#include "workspace.h"
 
 static const char *commands[] = {
     NULL
@@ -66,6 +60,7 @@ static void InitTabs(OG_Viewport *v){
 
 static void OnTreeList(OG_Viewport *v){
     if (treeListQ <= 0) return;
+    if (WorkspaceIsDrawingExtensible()) return;
 
     // Select tree
     float verticalOffset = 0;
@@ -120,6 +115,7 @@ static void OnTreeList(OG_Viewport *v){
 static void OnAnchorList(OG_Viewport *v){
     if (activeTree == NULL) return;
     if (activeTree->anchorsQ <= 0) return;
+    if (WorkspaceIsDrawingExtensible()) return;
     
     // Select an anchor
     float verticalOffset = 0;
@@ -170,6 +166,7 @@ static void OnAnchorList(OG_Viewport *v){
 
 static void OnTreeView(OG_Viewport *v){
     if (activeTree == NULL) return;
+    if (WorkspaceIsDrawingExtensible()) return;
 
     // Select viewport
     float verticalOffset = 0;
@@ -203,6 +200,7 @@ static void OnTreeView(OG_Viewport *v){
 static void OnAnnotationsList(OG_Viewport *v){
     if (!activeTree) return;
     if (activeTree->annotationsQ <= 0) return;
+    if (WorkspaceIsDrawingExtensible()) return;
 
     float verticalOffset = 0;
     Annotation *a = activeTree->annotations;

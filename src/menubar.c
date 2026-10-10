@@ -143,7 +143,22 @@ static void Init(OG_Viewport *v){
     v->ctx.style->padding = 0;
     v->ctx.draw_frame = &DrawFrame;
 
-    sprintf(helpUrl, "file:///%shelp/index.html", GetApplicationDirectory());
+    char originalCwd[OG_PATH_MAX];
+    char helpPath[OG_PATH_MAX];
+    char helpDir[OG_PATH_MAX];
+
+    snprintf(originalCwd, sizeof(originalCwd), "%s", GetWorkingDirectory());
+    snprintf(helpPath, sizeof(helpPath), "%s%s/help", GetApplicationDirectory(), ROOT);
+
+    ChangeDirectory(helpPath);
+
+    snprintf(helpDir, sizeof(helpDir), "%s", GetWorkingDirectory());
+    for (char *p = helpDir; *p; p++) if (*p == '\\') *p = '/';
+
+    snprintf(helpUrl, sizeof(helpUrl), "file:///%s/index.html", helpDir);
+    ChangeDirectory(originalCwd);
+    
+    
 }
 
 static void Update(OG_Viewport *v){

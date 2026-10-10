@@ -1,0 +1,55 @@
+{
+    "version":0,
+    "previews":[
+        "component_library_previews0.png"
+    ],
+
+    "extensibles":[
+        {
+            "name":"DinRiel_35mm",
+            "preview":[0,0,0],
+            "path":"../components/dist/extensibles/DinRiel.mwc"
+        },
+
+        
+        {
+            "name":"WireDuct_25mm",
+            "preview":[0,1,0],
+            "path":"../components/dist/extensibles/WireDuct_25mm.mwc"
+        }
+    ],
+    
+    "component_tree":[
+        {
+            "name": "Sample",
+            "expanded": true,
+            "content": [
+
+                {
+                    "name": "Breaker2P",
+                    "preview": [0,2,0],
+                    "path": "../components/dist/Breaker2P.mwc"
+                },
+
+                {
+                    "name": "Controller_96x96mm",
+                    "preview": [0,3,0],
+                    "path": "../components/dist/Controller_96x96mm.mwc"
+                },
+
+                {
+                    "name": "GreenSelectorWCollar_22mm",
+                    "preview": [0,4,0],
+                    "path": "../components/dist/GreenSelectorWCollar_22mm.mwc"
+                },
+
+                {
+                    "name": "Relay",
+                    "preview": [0,5,0],
+                    "path": "../components/dist/Relay.mwc"
+                }
+
+            ]
+        }
+    ]
+}

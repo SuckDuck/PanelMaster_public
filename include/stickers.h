@@ -1,3 +1,6 @@
+// Copyright 2026 Esteban Huertas
+// SPDX-License-Identifier: Apache-2.0
+
 #ifndef STICKERS_H
 #define STICKERS_H
 
