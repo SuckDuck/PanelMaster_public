@@ -8,5 +8,6 @@ void Workspace();
 void MenuBar();
 void DocumentEditor();
 void TitleBlockEditor();
+void SchematicEditor();
 
 #endif

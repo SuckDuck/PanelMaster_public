@@ -337,12 +337,13 @@ def compile(
     
     return out_files
 
-def link(cc:str, sources:List[str], lib_paths:List[str], links:List[str], ldflags:List[str], out_dir:str, out_name:str):
+def link(cc:str, sources:List[str], lib_paths:List[str], links:List[str], ldflags:List[str], out_dir:str, out_name:str, extra_args:List[str]=None):
     """Link object files into an executable in out_dir, skipping if up-to-date."""
     
     links=" ".join(links)
-    lib_paths=" ".join(lib_paths)
+    lib_paths = " ".join(f"-L{path}" for path in lib_paths)
     ldflags=" ".join(ldflags)
+    extra_args = " ".join(extra_args or [])
 
     out_name = os.path.join(out_dir,out_name)
     if(not have_changed(sources,out_name)):
@@ -350,7 +351,7 @@ def link(cc:str, sources:List[str], lib_paths:List[str], links:List[str], ldflag
         return
     
     sources = " ".join(sources)
-    command = f"{cc} -o {out_name} {sources} {lib_paths} {links} {ldflags}"
+    command = f"{cc} -o {out_name} {sources} {lib_paths} {links} {ldflags} {extra_args}"
     print(f"{COLORS.GREEN}COMMAND: {COLORS.RESET} {command}")
     if(os.system(command) != 0): sys.exit(1)
 

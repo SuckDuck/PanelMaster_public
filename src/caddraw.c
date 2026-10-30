@@ -428,10 +428,10 @@ void DrawCadLine(Vector2 startPos, Vector2 endPos, float thick, Color color){
     DrawLineHelper(intersections[0], endPos, thick, color);
 }
 
-void DrawCadBG(Texture2D *texture, Vector2 *points, int pointCount, Color tint){
+void EraseCadArea(Vector2 *points, int pointCount){
     switch (output){
         case CAD_OUTPUT_DEFAULT:
-            DrawTextureFromScreenSpace(texture, points, pointCount, tint);
+            ErasePolygon(points, pointCount);
         break;
 
         case CAD_OUTPUT_MEASURE:{
@@ -466,7 +466,7 @@ void DrawCadBG(Texture2D *texture, Vector2 *points, int pointCount, Color tint){
         case CAD_OUTPUT_DXF:break;
 
         case CAD_OUTPUT_SVG:{
-            uint32_t c = *(uint32_t *) &tint;
+            uint32_t c = 0xFFFFFFFF;
             SVG_polygon(svg, (SVG_Point*) points, pointCount, c, c, 0.0f);
         } break;
         

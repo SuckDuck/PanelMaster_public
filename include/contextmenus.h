@@ -16,5 +16,6 @@ void OpenEntityContextMenu();
 void OpenTitleBlockRectContextMenu(TitleBlockRect *r);
 void OpenTitleBlockContextMenu();
 void OpenTitleBlockEditorContextMenu();
+void OpenSchematicEditorContextMenu();
 
 #endif

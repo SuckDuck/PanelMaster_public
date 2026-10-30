@@ -13,6 +13,7 @@
 #include "origami_tools.h"
 #include "documentation.h"
 #include "saver.h"
+#include "schematics.h"
 #include "stickers.h"
 #include "surfaces.h"
 #include "main.h"
@@ -93,6 +94,7 @@ static void DuplicateSurface(char *copiesString){
         newSurface->name = newName;
         newSurface->pos = (Vector2){10,10};
         newSurface->opts = srcSurface->opts;
+        newSurface->size = srcSurface->size;
         SelectSurface(newSurface, false, false);
     }
 }
@@ -344,10 +346,10 @@ static void AnchorContextMenu(char *opt, void *param){
         if (a->A->type == ANCHOR_VERTICAL) a->offset = pos.y;
         if (a->B->type == ANCHOR_HORIZONTAL) a->offset = pos.x;
 
-        if ((IsAnchorPartOfCutout(a->A) || IsAnchorPartOfCutout(a->B)) && !inspectorSettings.DrawCutOuts)
+        if ((IsAnchorPartOfCutout(a->A) || IsAnchorPartOfCutout(a->B)) && !inspectorSettings.drawCutOuts)
             OG_PushLog("Annotation not visible: uses a cutout anchor, but cutout rendering is disabled");
         
-        if ((IsAnchorPartOfBoundary(a->A) || IsAnchorPartOfBoundary(a->B)) && !inspectorSettings.DrawSkins)
+        if ((IsAnchorPartOfBoundary(a->A) || IsAnchorPartOfBoundary(a->B)) && !inspectorSettings.drawSkins)
             OG_PushLog("Annotation not visible: uses a boundary anchor, but skin rendering is disabled");
 
         return;
@@ -597,6 +599,18 @@ static void SurfaceContextMenu(char *opt, void *param){
             ".mwc",
             "Select a component [.mwc]"
         );
+
+        return;
+    }
+
+    if (strcmp(opt, "Add Generic") == 0){
+        const float baseSize = 40.0f;
+
+        Surface *s = AddSurface(activeTree->surfaceSelection[0], "generic", ResolveSurfaceName("generic", activeTree), SURFACE_COMPONENT);
+        s->size = (Vector2){baseSize, baseSize};
+        s->ogSize = (Vector2){baseSize, baseSize};
+        s->skin.tint = (Color){255, 255, 255, 255};
+        s->opts |= SURFACE_OPT_GENERIC;
     }
 
 
@@ -748,9 +762,13 @@ static void SurfaceContextMenu(char *opt, void *param){
     if (strcmp(opt, "Create CutOut Anchors") == 0){
         // Get bounding box
         Rectangle polyRect = {0};
-        Vector2 *p = s[0]->cutout.points;
         int pQ = s[0]->cutout.len;
-
+        Vector2 surfaceScale = Vector2Divide(s[0]->size, s[0]->ogSize);
+        Vector2 p[pQ];
+        for (int i=0; i< pQ; i++){
+            p[i] = Vector2Multiply(s[0]->cutout.points[i], surfaceScale);
+        }
+        
         float minX = p[0].x;
         float minY = p[0].y;
         float maxX = p[0].x;
@@ -852,7 +870,8 @@ void OpenSurfaceContextMenu(void *param){
         !IsSurfaceBase(s[0]) ? "Reparent Surface":NULL,
         !IsSurfaceBase(s[0]) ? "Duplicate Surface":NULL,
         "Add Child Surface",
-        "Align Children",
+        "Add Generic",
+        !IsSurfaceBase(s[0]) ? "Align Children":NULL,
         "Flat Surface",
         s[0] != (s[0]->parent ? s[0]->parent->children:s[0]) ? "Shift Up":NULL,
         s[0]->next != NULL ? "Shift Down" : NULL,
@@ -1109,7 +1128,7 @@ void OpenPageListContextMenu(){
     char *opts[] = {
         activeTree ? "New Page" : NULL,
         mainDocument.selectedPage ? "Delete Page" : NULL,
-        mainDocument.pagesQ > 0 ? "Save Document as":NULL,
+        (!IS_WASM && mainDocument.pagesQ > 0) ? "Save Document as":NULL,
         (mainDocument.selectedPage) ? "Duplicate Page" : NULL,
         (mainDocument.selectedPage) ? "Add Text" : NULL,
         (mainDocument.selectedPage && treeListQ > 0) ? "Add Surface" : NULL,
@@ -1165,7 +1184,7 @@ void OpenEntityContextMenu(){
         "Delete Entity",
         e->page->entities != e ? "Shift Up":NULL,
         e->next ? "Shift Down" : NULL,
-        e->type == PAGE_ENTITY_SURFACE ? "Export to SVG" : NULL
+        (!IS_WASM && e->type == PAGE_ENTITY_SURFACE) ? "Export to SVG" : NULL
     };
 
     OG_OpenContextMenuV3( 
@@ -1302,5 +1321,26 @@ void OpenTitleBlockEditorContextMenu(){
         NULL, 
         sizeof(opts)/sizeof(opts[0]),
         opts
-    );    
+    );
+}
+
+static void SchematicEditorContextMenu(char *opt, void *param){
+    if (strcmp(opt, "Add Symbol") == 0){
+        Symbol *s = AddSymbol(activeSchematic);
+        return;
+    }
+}
+
+void OpenSchematicEditorContextMenu(){
+    char *opts[] = {
+        "Add Symbol",
+    };
+
+    OG_OpenContextMenuV3(
+        &SchematicEditorContextMenu, 
+        NULL, 
+        NULL, 
+        sizeof(opts)/sizeof(opts[0]),
+        opts
+    );
 }

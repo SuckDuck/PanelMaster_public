@@ -14,6 +14,10 @@
 #include "saver.h"
 #include "titleblock.h"
 
+#ifdef __EMSCRIPTEN__
+    #include <emscripten/emscripten.h>
+#endif
+
 
 static char helpUrl[OG_PATH_MAX];
 
@@ -136,6 +140,11 @@ static void ViewContextMenu(char *opt, void *param){
         OG_OpenViewportByName("TitleBlockEditor");
         return;
     }
+
+    if (strcmp(opt, "Schematic Editor") == 0){
+        OG_OpenViewportByName("SchematicEditor");
+        return;
+    }
 }
 
 static void Init(OG_Viewport *v){
@@ -157,7 +166,6 @@ static void Init(OG_Viewport *v){
 
     snprintf(helpUrl, sizeof(helpUrl), "file:///%s/index.html", helpDir);
     ChangeDirectory(originalCwd);
-    
     
 }
 
@@ -194,12 +202,12 @@ static void UI(OG_Viewport *v, mu_Context *ctx){
             "New Panel",
             "Open Panel",
             activeTree ? "Change Panel":NULL,
-            activeTree ? "Save Panel as":NULL,
-            activeTree ? "Save Panel":NULL,
+            (!IS_WASM && activeTree) ? "Save Panel as":NULL,
+            (!IS_WASM && activeTree) ? "Save Panel":NULL,
             "New Title Block",
             "Open Title Block",
             activeTitleBlock ? "Save Title Block as":NULL,
-            mainDocument.pagesQ > 0 ? "Save Document as":NULL
+            (!IS_WASM && mainDocument.pagesQ > 0) ? "Save Document as":NULL
         };
 
         OG_OpenContextMenuV3(&FileContextMenu, NULL, NULL, sizeof(opts)/sizeof(opts[0]), opts);
@@ -211,7 +219,8 @@ static void UI(OG_Viewport *v, mu_Context *ctx){
         char *opts[] = {
             "Workspace",
             "Document Editor",
-            "TitleBlock Editor"
+            "TitleBlock Editor",
+            //"Schematic Editor"
         };
 
         OG_OpenContextMenuV3(&ViewContextMenu, NULL, NULL, sizeof(opts)/sizeof(opts[0]), opts);
@@ -221,7 +230,14 @@ static void UI(OG_Viewport *v, mu_Context *ctx){
 
     if (mu_button_ex(ctx, "Help", 0, MU_OPT_ALIGNCENTER | (OG.viewports.tail == v ? 0:MU_OPT_NOINTERACT))){
         printf("%s\n", helpUrl);
-        OpenURL(helpUrl);
+        #ifdef __EMSCRIPTEN__
+            EM_ASM({
+                window.location.href = "../help/";
+            });
+        #else
+            OpenURL(helpUrl);
+        #endif
+        
     }
     
 }

@@ -115,9 +115,18 @@ static void FreeFileList(FileList fl){
     fl.count = 0;
 }
 
+bool ChangeDirectoryHelper(const char *path){
+    char *before = strdup(GetWorkingDirectory());
+    ChangeDirectory(path);
+    bool changed = strcmp(before, GetWorkingDirectory()) != 0;
+    free(before);
+    return changed;
+}
+
 static void Init(OG_Viewport *v){
     pwdFiles = InitFileList(".");
     v->updateAlways = true;
+    v->renderAlways = true;
     this = v;
 }
 
@@ -150,11 +159,12 @@ static void Update(OG_Viewport *v){
             if (CheckCollisionPointRec(OG_GetMouseOverlayPosition(v), r)){
                 if (selectedFile == e){
                     if (e->isDir){
-                        if (ChangeDirectory(e->path)){
+                        if (ChangeDirectoryHelper(e->path)){
                             selectedFile = NULL;
                             scroll = 0;
                             FreeFileList(pwdFiles);
                             pwdFiles = InitFileList(".");
+                            return;
                         }
 
                         else{
@@ -190,6 +200,7 @@ static const char **GetCmds(){
 }
 
 static void RenderOverlay(OG_Viewport *v){
+    if (v->hidden) return;
     float verticalOffset = 0.0f;
     for (int i=0; i<pwdFiles.count; i++){
         FileEntrie *e = &pwdFiles.entries[i];
@@ -226,7 +237,7 @@ static void AdressBar(OG_Viewport *v, mu_Context *ctx){
     mu_layout_row(ctx, 2, (const int[]){-40, -1}, 25);
     mu_textbox_ex(ctx, (char*) GetWorkingDirectory(), OG_PATH_MAX, MU_OPT_NOINTERACT);
     if(mu_button(ctx, "Up")){
-        if (ChangeDirectory("..")){
+        if (ChangeDirectoryHelper("..")){
             scroll = 0;
             selectedFile = NULL;
             FreeFileList(pwdFiles);
@@ -271,7 +282,7 @@ static void Footer(OG_Viewport *v, mu_Context *ctx){
     
     else if (mu_button(ctx, "Ok")){
         if (selectedFile && selectedFile->isDir){
-            if (ChangeDirectory(selectedFile->path)){
+            if (ChangeDirectoryHelper(selectedFile->path)){
                 selectedFile = NULL;
                 scroll = 0;
                 FreeFileList(pwdFiles);

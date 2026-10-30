@@ -26,6 +26,12 @@
 #define TITLEBLOCKS_Q 32
 #define HATCH_SPACE 3.0f
 
+#ifdef __EMSCRIPTEN__
+    #define IS_WASM true
+#else
+    #define IS_WASM false
+#endif
+
 #include "surfaces.h"
 #include "documentation.h"
 #include "caddraw.h"

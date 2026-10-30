@@ -31,7 +31,7 @@ static Vector2 targetDelta;
 float contentSize;
 float scroll;
 
-static RenderTexture bgTex;
+static RenderTexture entitiesTexture;
 
 /* <== Utils ===================================================> */
 
@@ -345,19 +345,7 @@ static void CanvasUpdate(OG_Viewport *v){
 static void CanvasRender(OG_Viewport *v){
     if (!mainDocument.selectedPage) return;
     
-    // -------------- RENDERS THE PAGE (the white rect)
-    if (bgTex.texture.width != v->renderTexture.texture.width || bgTex.texture.height != v->renderTexture.texture.height){
-        UnloadRenderTexture(bgTex);
-        bgTex = LoadRenderTexture(v->renderTexture.texture.width, v->renderTexture.texture.height);
-    }
-
-    // leaves the original "viewport texture"
-    EndMode2D();
-    EndTextureMode();
-    BeginTextureMode(bgTex);
-    ClearBackground(OG_VIEWPORT_BG_C);
-    BeginMode2D(v->camera);
-
+    // Renders the page (the white rect)
     DrawRectanglePro(
         (Rectangle){
             -mainDocument.width/2.0f, 
@@ -370,20 +358,6 @@ static void CanvasRender(OG_Viewport *v){
         WHITE
     );
 
-    // returns to the original "viewport texture"
-    EndMode2D();
-    EndTextureMode();
-    BeginTextureMode(v->renderTexture);
-    
-    DrawTextureRec(
-        bgTex.texture,
-        (Rectangle){ 0, 0, bgTex.texture.width, -bgTex.texture.height },
-        (Vector2){ 0, 0 },
-        WHITE
-    );
-
-    BeginMode2D(v->camera);
-    
 }
 
 static void DrawEntitySelectionRect(OG_Viewport *v, PageEntity *e, Vector2 size){
@@ -430,6 +404,16 @@ static void DrawEntitySelectionRect(OG_Viewport *v, PageEntity *e, Vector2 size)
 
 static void CanvasRenderOverlay(OG_Viewport *v){
     if (!mainDocument.selectedPage) return;
+
+    if (entitiesTexture.texture.width != v->renderTexture.texture.width || entitiesTexture.texture.height != v->renderTexture.texture.height){
+        UnloadRenderTexture(entitiesTexture);
+        entitiesTexture = LoadRenderTexture(v->renderTexture.texture.width, v->renderTexture.texture.height);
+    }
+
+    // Renders the entities to the "entities texture"
+    EndTextureMode();
+    BeginTextureMode(entitiesTexture);
+    ClearBackground((Color){0,0,0,0});
     
     for (PageEntity *e = mainDocument.selectedPage->entities; e != NULL; e = e->next){
         switch (e->type){
@@ -437,16 +421,17 @@ static void CanvasRenderOverlay(OG_Viewport *v){
                 DrawSurfaceTree(
                     v, e->surface->surface->tree, 
                     e->surface->lod, 
-                    &bgTex.texture, 
                     e->pos, 
                     e->surface->scale, 
                     BLACK, 
                     BLACK, 
                     HATCH_SPACE * v->camera.zoom,
+                    e->surface->labelsFontSize * v->camera.zoom,
                     false, false, false,
                     true,
                     e->surface->flags & PESF_DRAW_SKINS,
                     e->surface->flags & PESF_DRAW_CUTOUTS,
+                    e->surface->flags & PESF_DRAW_LABELS,
                     false
                 );
 
@@ -538,6 +523,11 @@ static void CanvasRenderOverlay(OG_Viewport *v){
         }
     }
 
+    EndTextureMode();
+    BeginTextureMode(v->renderTexture);
+
+    // Composites the entities and frame over the page
+    DrawTextureRec(entitiesTexture.texture, (Rectangle){ 0, 0, entitiesTexture.texture.width, -entitiesTexture.texture.height },(Vector2){ 0, 0 }, ColorWithAlpha(WHITE, 255));
     if (mainDocument.selectedPage->drawFrame){
         Vector2 tlc = GetWorldToScreen2D(
             (Vector2){
@@ -589,7 +579,7 @@ static void DocumentProperties(OG_Viewport *v, mu_Context *ctx){
     float widht = mainDocument.width;
     float height = mainDocument.height;
 
-    mu_equal_layout_l_auto(ctx, (const char *[]){"W:", "H:", 0}, 0);
+    mu_equal_layout_l_auto(ctx, (const char *[]){"W:", "H:", 0}, 0, NULL, NULL);
     mu_label(ctx, "W:");
     if (mu_number_custom(
         ctx, &widht, 
@@ -613,7 +603,7 @@ static void PageProperties(OG_Viewport *v, mu_Context *ctx){
     if (!mu_header_ex(ctx, "Page Properties", MU_OPT_EXPANDED)) return;
     
     if (mainDocument.selectedPage->drawFrame){
-        mu_equal_layout_l_auto(ctx, (const char *[]){"BottomMargin:",0}, 0);
+        mu_equal_layout_l_auto(ctx, (const char *[]){"BottomMargin:",0}, 0, NULL, NULL);
         
         // Left Margin
         mu_label(ctx, "LeftMargin:");
@@ -665,7 +655,7 @@ static void EntityProperties(OG_Viewport *v, mu_Context *ctx){
     if (!mu_header_ex(ctx, "Entity Properties", MU_OPT_EXPANDED)) return;
     PageEntity *e = mainDocument.selectedPage->selectedEntity;
     
-    mu_equal_layout_l_auto(ctx, (const char *[]){"X:", "Y:", 0}, 0);
+    mu_equal_layout_l_auto(ctx, (const char *[]){"X:", "Y:", 0}, 0, NULL, NULL);
     mu_label(ctx, "X:");
     mu_number_custom(
         ctx, &e->pos.x, 
@@ -688,14 +678,14 @@ static void SurfaceEntityProperties(OG_Viewport *v, mu_Context *ctx){
     
     // LOD 
     float lod = ee->lod;
-    mu_equal_layout_l_auto(ctx, (const char *[]){"LOD:", 0}, 0);
+    mu_equal_layout_l_auto(ctx, (const char *[]){"LOD:", 0}, 0, NULL, NULL);
     mu_label(ctx, "LOD:");
     if (mu_slider_ex(ctx, &lod, 0, 2, 1, "%.0f", 0)){
         ee->lod = (int)lod;
     }
 
     // Scale
-    mu_equal_layout_l_auto(ctx, (const char *[]){"Scale:", 0}, 0);
+    mu_equal_layout_l_auto(ctx, (const char *[]){"Scale:", 0}, 0, NULL, NULL);
     mu_label(ctx, "Scale:");
     mu_number_custom(
         ctx, &ee->scale, 
@@ -703,10 +693,21 @@ static void SurfaceEntityProperties(OG_Viewport *v, mu_Context *ctx){
         MU_OPT_KEYBOARD_ONLY | MU_OPT_ALIGNCENTER
     );
 
+    if (ee->flags & PESF_DRAW_LABELS){
+        // Labels text size
+        mu_equal_layout_l_auto(ctx, (const char *[]){"LabelsFontSize:", 0}, 0, NULL, NULL);
+        mu_label(ctx, "LabelsFontSize:");
+        mu_number_custom(
+            ctx, &ee->labelsFontSize, 
+            0, "%.2f", 
+            MU_OPT_KEYBOARD_ONLY | MU_OPT_ALIGNCENTER
+        );  
+    }
+
     if (ee->flags & PESF_DRAW_ANNOTATIONS){
         
         // Annotations text size
-        mu_equal_layout_l_auto(ctx, (const char *[]){"AnnFontSize:", 0}, 0);
+        mu_equal_layout_l_auto(ctx, (const char *[]){"AnnFontSize:", 0}, 0, NULL, NULL);
         mu_label(ctx, "AnnFontSize:");
         mu_number_custom(
             ctx, &ee->annotationsFontSize, 
@@ -715,7 +716,7 @@ static void SurfaceEntityProperties(OG_Viewport *v, mu_Context *ctx){
         );  
 
         // Annotations arrow size
-        mu_equal_layout_l_auto(ctx, (const char *[]){"AnnArrowSize:", 0}, 0);
+        mu_equal_layout_l_auto(ctx, (const char *[]){"AnnArrowSize:", 0}, 0, NULL, NULL);
         mu_label(ctx, "AnnArrowSize:");
         mu_number_custom(
             ctx, &ee->annotationsArrowSize, 
@@ -723,6 +724,16 @@ static void SurfaceEntityProperties(OG_Viewport *v, mu_Context *ctx){
             MU_OPT_KEYBOARD_ONLY | MU_OPT_ALIGNCENTER
         );  
     }
+
+    // DrawLabels
+    mu_layout_row(ctx, 2, (const int[]){-25, -1}, 0);
+    mu_button_ex(ctx, "Draw Labels:", 0, MU_OPT_NOINTERACT | MU_OPT_NOFRAME | MU_OPT_ALIGNRIGHT);
+    mu_push_id(ctx, "draw_labels", 16);
+    
+    int drawLabels = ee->flags & PESF_DRAW_LABELS;
+    if (mu_checkbox(ctx, "", &drawLabels))
+        ee->flags ^= PESF_DRAW_LABELS;
+    mu_pop_id(ctx);
 
     // DrawAnnotations
     mu_layout_row(ctx, 2, (const int[]){-25, -1}, 0);
@@ -767,7 +778,7 @@ static void TextEntityProperties(OG_Viewport *v, mu_Context *ctx){
     mu_infinite_input(ctx, "TitleBoxRectPropertiesSection_Text", &et->text);
     
     // Text Size
-    mu_equal_layout_l_auto(ctx, (const char *[]){"Size:", 0}, 0);
+    mu_equal_layout_l_auto(ctx, (const char *[]){"Size:", 0}, 0, NULL, NULL);
     mu_label(ctx, "Size:");
     mu_number_custom(
         ctx, &et->fontSize, 
@@ -776,7 +787,7 @@ static void TextEntityProperties(OG_Viewport *v, mu_Context *ctx){
     );
 
     // Text Alignment
-    mu_equal_layout_l_auto(ctx, (const char *[]){"Left:", "Center:", "Right:", 0}, 0);
+    mu_equal_layout_l_auto(ctx, (const char *[]){"Left:", "Center:", "Right:", 0}, 0, NULL, NULL);
     
     mu_label(ctx, "Left:");
     int left = et->alignment == CAD_ALIGN_LEFT;
@@ -800,7 +811,7 @@ static void TextEntityProperties(OG_Viewport *v, mu_Context *ctx){
     mu_pop_id(ctx);
 
     // Text Color
-    mu_equal_layout_l_auto(ctx, (const char *[]){"R:", "G:", "B:", 0}, 0);
+    mu_equal_layout_l_auto(ctx, (const char *[]){"R:", "G:", "B:", 0}, 0, NULL, NULL);
     mu_label(ctx, "R:");
     float r = et->color.r;
     if (mu_slider_ex(ctx, &r, 0.0f, 255.0f, 1.0f, "%.0f", 0))
@@ -891,7 +902,7 @@ static void StickerEntityProperties(OG_Viewport *v, mu_Context *ctx){
     if (!mu_header_ex(ctx, "Sticker Properties", MU_OPT_EXPANDED)) return;
     PageEntitySticker *es = mainDocument.selectedPage->selectedEntity->sticker;
 
-    mu_equal_layout_l_auto(ctx, (const char *[]){"Scale:", 0}, 0);
+    mu_equal_layout_l_auto(ctx, (const char *[]){"Scale:", 0}, 0, NULL, NULL);
     mu_label(ctx, "Scale:");
     mu_number_custom(ctx, &es->scale, 0.0f, "%.2f", MU_OPT_KEYBOARD_ONLY | MU_OPT_ALIGNCENTER);
 }

@@ -33,15 +33,16 @@ typedef enum State{
     MOVING_ANCHOR_STATE,
     MOVING_ANNOTATION_STATE,
     MOVING_ANNOTATION_EXTENSION_STATE,
-    DRAWING_EXTENSIBLE
+    DRAWING_EXTENSIBLE,
+    OFFSET_TOOL_MODE_STATE
 } State;
 
 static const char *commands[] = {
     NULL
 };
 
-static RenderTexture gridTex;
-static RenderTexture ghostTex;
+static RenderTexture ghostSurfaceTex;
+static RenderTexture activeSurfaceTex;
 
 static State currentState;
 static Surface *targetSurface;
@@ -55,8 +56,9 @@ InspectorSettings inspectorSettings = {
     .enableGrid = 0,
     .enableAnchors = 1,
     .enableAnnotations = 1,
-    .DrawSkins = 1,
-    .DrawCutOuts = 0,
+    .drawLabels = 1,
+    .drawSkins = 1,
+    .drawCutOuts = 0,
     .gridSpacing = 50
 };
 
@@ -89,6 +91,13 @@ void DrawAnchor(OG_Viewport *v, Anchor *a, Color c){
     );
 }
 
+void DrawToolName(OG_Viewport *v, char *toolName){
+    Vector2 mousePos = OG_GetMouseOverlayPosition(v);
+    const float fontSize = 15.0f;
+    
+    DrawTextEx(OG.defaultFont, toolName, (Vector2){mousePos.x+5, mousePos.y-fontSize}, fontSize, 2.0f, WHITE);
+}
+
 /* <== StateMachine ================================================> */
 
 static void IdleState(OG_Viewport *v){
@@ -100,6 +109,12 @@ static void IdleState(OG_Viewport *v){
     }
     
     OG_ViewportUpdateZoom(v);
+
+    // Offset Tool mode
+    if (IsKeyDown(KEY_O)){
+        currentState = OFFSET_TOOL_MODE_STATE;
+        return;
+    }
 
     Vector2 mousePos = OG_GetMouseViewportPosition(v);
     if (OG_IsMouseButtonPressed(v, MOUSE_RIGHT_BUTTON))
@@ -368,7 +383,7 @@ static void MovingAnnotationExtensionState(OG_Viewport *v){
 
 static void DrawingExtensibleState(OG_Viewport *v){
     // PAN
-    if (OG_IsMouseButtonDown(v, MOUSE_MIDDLE_BUTTON) || OG_IsKeyDown(v, KEY_LEFT_CONTROL)){
+    if (!drawingExtensiblePoints[0] && (OG_IsMouseButtonDown(v, MOUSE_MIDDLE_BUTTON) || OG_IsKeyDown(v, KEY_LEFT_CONTROL))){
         OG_ChangeCursor(v, MOUSE_CURSOR_RESIZE_ALL);
         OG_ViewportUpdatePan(v);
         return;
@@ -376,10 +391,13 @@ static void DrawingExtensibleState(OG_Viewport *v){
     
     OG_ViewportUpdateZoom(v);
     Vector2 mousePos = OG_GetMouseViewportPosition(v);
+    static Vector2 p0ScreenSpace;
 
     if (OG_IsMouseButtonPressed(v, MOUSE_LEFT_BUTTON)){
-        drawingExtensiblePoints[0] = calloc(1, sizeof(Vector2));
+        if (!drawingExtensiblePoints[0])
+            drawingExtensiblePoints[0] = calloc(1, sizeof(Vector2));
         *drawingExtensiblePoints[0] = mousePos;
+        p0ScreenSpace = OG_GetMouseOverlayPosition(v);
     }
 
     if (drawingExtensiblePoints[0]){
@@ -389,16 +407,27 @@ static void DrawingExtensibleState(OG_Viewport *v){
         Vector2 p0 = *drawingExtensiblePoints[0];
         Vector2 p1 = mousePos;
 
-        if (fabsf(p1.x - p0.x) > fabsf(p1.y - p0.y)) p1.y = p0.y; // horizontal
-        else p1.x = p0.x; // vertical
-            
+        Vector2 p1ScreenSpace = OG_GetMouseOverlayPosition(v);
+
+        const float threshold = 50.0f;
+
+        // vertical
+        if (fabsf(p1ScreenSpace.x - p0ScreenSpace.x) <= threshold) {
+            p1.x = p0.x;
+        }
+
+        // horizontal
+        else if (fabsf(p1ScreenSpace.y - p0ScreenSpace.y) <= threshold) {
+            p1.y = p0.y;
+        }
+
         *drawingExtensiblePoints[1] = p1;
     }
 
     if (OG_IsMouseButtonReleased(v, MOUSE_LEFT_BUTTON) && drawingExtensiblePoints[0] && drawingExtensiblePoints[1]){
         SidePanelDrawExtensible(*drawingExtensiblePoints[0], *drawingExtensiblePoints[1]);
-        free(drawingExtensiblePoints[0]);
-        free(drawingExtensiblePoints[1]);
+        if (drawingExtensiblePoints[0]) free(drawingExtensiblePoints[0]);
+        if (drawingExtensiblePoints[1]) free(drawingExtensiblePoints[1]);
         drawingExtensiblePoints[0] = NULL;
         drawingExtensiblePoints[1] = NULL;
         currentState = IDLE_STATE;
@@ -406,6 +435,50 @@ static void DrawingExtensibleState(OG_Viewport *v){
     }
     
     OG_ChangeCursor(v, MOUSE_CURSOR_CROSSHAIR);
+}
+
+static void OffsetToolModeState(OG_Viewport *v){
+    // PAN
+    if (OG_IsMouseButtonDown(v, MOUSE_MIDDLE_BUTTON) || OG_IsKeyDown(v, KEY_LEFT_CONTROL)){
+        OG_ChangeCursor(v, MOUSE_CURSOR_RESIZE_ALL);
+        OG_ViewportUpdatePan(v);
+        return;
+    }
+    
+    OG_ViewportUpdateZoom(v);
+
+    if (!IsKeyDown(KEY_O)){
+        currentState = IDLE_STATE;
+        return;
+    }
+
+    if (inspectorSettings.enableAnchors){
+        Vector2 mousePos = OG_GetMouseViewportPosition(v);
+        for (Anchor *a = activeTree->anchors; a != NULL; a = a->next){
+            if (a->opts & ANCHOR_OPT_HIDDEN) continue;
+            
+            float val = GetAnchorAbsValue(a);
+            float margin = 3/v->camera.zoom;
+
+            if (fabsf((a->type == ANCHOR_HORIZONTAL ? mousePos.y : mousePos.x) - val) <= margin) {
+                if (a->type == ANCHOR_HORIZONTAL) OG_ChangeCursor(v, MOUSE_CURSOR_RESIZE_NS);
+                else OG_ChangeCursor(v, MOUSE_CURSOR_RESIZE_EW);
+                
+                if (OG_IsMouseButtonPressed(v, MOUSE_LEFT_BUTTON)){
+                    char *resolvedName = ResolveAnchorName(a->name, activeTree);
+                    Anchor *aa = AddAnchorOffset(a, resolvedName, 0.0f);
+                    SelectAnchor(aa, false, false);
+                    targetAnchor = aa;
+                    targetAnchorDelta = GetAnchorAbsValue(targetAnchor) - (a->type == ANCHOR_HORIZONTAL ? mousePos.y:mousePos.x);
+                    currentState = MOVING_ANCHOR_STATE;
+                    return;
+
+                }
+
+            }
+            
+        }
+    }
 }
 
 /* <== Callbacks ===============================================> */
@@ -421,21 +494,17 @@ static void ExecCmd(OG_Viewport *v, int argc, char **argv){
 static void Render(OG_Viewport *v){}
 
 static void RenderOverlay(OG_Viewport *v){
-    // Remder the grid to a texture
-    if (gridTex.texture.width != v->renderTexture.texture.width || gridTex.texture.height != v->renderTexture.texture.height){
-        UnloadRenderTexture(gridTex);
-        gridTex = LoadRenderTexture(v->renderTexture.texture.width, v->renderTexture.texture.height);
+    // Render the grid to a texture
+    
+    if (activeSurfaceTex.texture.width != v->renderTexture.texture.width || activeSurfaceTex.texture.height != v->renderTexture.texture.height){
+        UnloadRenderTexture(activeSurfaceTex);
+        activeSurfaceTex = LoadRenderTexture(v->renderTexture.texture.width, v->renderTexture.texture.height);
     }
-
-    if (ghostTex.texture.width != v->renderTexture.texture.width || ghostTex.texture.height != v->renderTexture.texture.height){
-        UnloadRenderTexture(ghostTex);
-        ghostTex = LoadRenderTexture(v->renderTexture.texture.width, v->renderTexture.texture.height);
+    
+    if (ghostSurfaceTex.texture.width != v->renderTexture.texture.width || ghostSurfaceTex.texture.height != v->renderTexture.texture.height){
+        UnloadRenderTexture(ghostSurfaceTex);
+        ghostSurfaceTex = LoadRenderTexture(v->renderTexture.texture.width, v->renderTexture.texture.height);
     }
-
-    // This Draw the grid on the grid texture
-    // Then Draw the grid on the ghostTexture
-    // Then use the ghostTexture as background
-    // on the main texture
 
     int lod = 0;
     for (int i=0; i<lodsQ; i++){
@@ -443,74 +512,66 @@ static void RenderOverlay(OG_Viewport *v){
             lod = i;
     }
 
-    EndTextureMode(); // leaves the original "viewport texture"
-    BeginTextureMode(gridTex);
-    ClearBackground(OG_VIEWPORT_BG_C);
-    DrawViewportGrid(v, inspectorSettings.gridSpacing, GRID_C, !inspectorSettings.enableGrid);
+    // Renders the ghost surface to the "ghost texture"
     EndTextureMode();
+    BeginTextureMode(ghostSurfaceTex);
+    ClearBackground((Color){0,0,0,0});
     
-    BeginTextureMode(ghostTex);
-    ClearBackground(OG_VIEWPORT_BG_C);
-    
-    DrawTextureRec(
-        gridTex.texture,
-        (Rectangle){ 
-            0, 0, 
-            gridTex.texture.width, 
-            -gridTex.texture.height 
-        },
-        (Vector2){ 0, 0 },
-        WHITE
-    );
-
     if (ghostTree && ghostTree != activeTree){
         DrawSurfaceTree(
             v, ghostTree, lod,
-            &gridTex.texture, 
-            Vector2Zero(),
-            1.0f,
-            ColorWithAlpha(WHITE, 100),
-            ColorWithAlpha(PINK, 100),
-            8.0f,
-            ghostTreeFlipX,
-            ghostTreeFlipY,
-            false,
-            true,
-            inspectorSettings.DrawSkins,
-            inspectorSettings.DrawCutOuts,
-            false
-        );
-
-    }
-        
-    EndTextureMode();
-    BeginTextureMode(v->renderTexture); // returns to the original "viewport texture"
-    
-    DrawTextureRec(
-        ghostTex.texture,
-        (Rectangle){ 0, 0, gridTex.texture.width, -gridTex.texture.height },
-        (Vector2){ 0, 0 },
-        WHITE
-    );
-    
-    if (activeTree){
-        DrawSurfaceTree(
-            v, activeTree, lod,
-            &ghostTex.texture, 
             Vector2Zero(),
             1.0f,
             WHITE, 
             PINK,
             8.0f,
+            OG.defaultFontSize,
+            ghostTreeFlipX,
+            ghostTreeFlipY,
+            false,
+            true,
+            inspectorSettings.drawSkins,
+            inspectorSettings.drawCutOuts,
+            false,
+            false
+        );
+    }
+
+    // Renders the active surface to the "active surface texture"
+    EndTextureMode();
+    BeginTextureMode(activeSurfaceTex);
+    ClearBackground((Color){0,0,0,0});
+
+    if (activeTree){
+        DrawSurfaceTree(
+            v, activeTree, lod,
+            Vector2Zero(),
+            1.0f,
+            WHITE, 
+            PINK,
+            8.0f,
+            OG.defaultFontSize,
             false, false,
             false,
             false,
-            inspectorSettings.DrawSkins,
-            inspectorSettings.DrawCutOuts,
+            inspectorSettings.drawSkins,
+            inspectorSettings.drawCutOuts,
+            inspectorSettings.drawLabels,
             false
         );
-        
-        // Draw Anchors
+    }
+
+    // Composites the ghost and active surfaces over the viewport background and grid
+    EndTextureMode();
+    BeginTextureMode(v->renderTexture);
+
+    ClearBackground(OG_VIEWPORT_BG_C);
+    DrawViewportGrid(v, inspectorSettings.gridSpacing, GRID_C, !inspectorSettings.enableGrid);
+    DrawTextureRec(ghostSurfaceTex.texture, (Rectangle){ 0, 0, ghostSurfaceTex.texture.width, -ghostSurfaceTex.texture.height },(Vector2){ 0, 0 }, ColorWithAlpha(WHITE, 100));
+    DrawTextureRec(activeSurfaceTex.texture, (Rectangle){ 0, 0, activeSurfaceTex.texture.width, -activeSurfaceTex.texture.height },(Vector2){ 0, 0 }, ColorWithAlpha(WHITE, 255));
+
+    // Draw Anchors and Annotations
+    if (activeTree){
         if (inspectorSettings.enableAnchors){
             Color primary   = { 255, 255, 0, 117 };
             Color secondary = { 200, 140, 0, 117 };
@@ -530,11 +591,10 @@ static void RenderOverlay(OG_Viewport *v){
             }
         }
 
-        // Draw annotations 
         if (inspectorSettings.enableAnnotations){        
             for (Annotation *ann = activeTree->annotations; ann != NULL; ann = ann->next){
-                if ((IsAnchorPartOfCutout(ann->A) || IsAnchorPartOfCutout(ann->B)) && !inspectorSettings.DrawCutOuts) continue;
-                if ((IsAnchorPartOfBoundary(ann->A) || IsAnchorPartOfBoundary(ann->B)) && !inspectorSettings.DrawSkins) continue;
+                if ((IsAnchorPartOfCutout(ann->A) || IsAnchorPartOfCutout(ann->B)) && !inspectorSettings.drawCutOuts) continue;
+                if ((IsAnchorPartOfBoundary(ann->A) || IsAnchorPartOfBoundary(ann->B)) && !inspectorSettings.drawSkins) continue;
 
                 DrawAnnotation(
                     v, ann, PINK, 
@@ -556,10 +616,27 @@ static void RenderOverlay(OG_Viewport *v){
         const float lineWidth = 2.0f;
         const Color c = {0, 220, 255, 255};
 
-        DrawLineEx(p0, p1, lineWidth, c);
+        if (p0.x == p1.x || p0.y == p1.y) {
+            // Straight line
+            DrawLineEx(p0, p1, lineWidth, c);
 
-        DrawCircleV(p0, radius, c);
-        DrawCircleV(p1, radius, c);
+            DrawCircleV(p0, radius, c);
+            DrawCircleV(p1, radius, c);
+        }
+        else {
+            // Rectangle corners
+            Vector2 corners[4] = {
+                p0,
+                {p1.x, p0.y},
+                p1,
+                {p0.x, p1.y}
+            };
+
+            for (int i = 0; i < 4; i++) {
+                DrawLineEx(corners[i], corners[(i + 1) % 4], lineWidth, c);
+                DrawCircleV(corners[i], radius, c);
+            }
+        }
     }
 
     // Draw camera zoom and offset
@@ -584,6 +661,9 @@ static void RenderOverlay(OG_Viewport *v){
         2.0f,
         WHITE
     );
+
+    if (currentState == OFFSET_TOOL_MODE_STATE)
+        DrawToolName(v, "offset");
 
 }
 
@@ -623,6 +703,7 @@ static void Update(OG_Viewport *v){
         case MOVING_ANNOTATION_STATE:           MovingAnnotationState(v);          break;
         case MOVING_ANNOTATION_EXTENSION_STATE: MovingAnnotationExtensionState(v); break;
         case DRAWING_EXTENSIBLE:                DrawingExtensibleState(v);         break;
+        case OFFSET_TOOL_MODE_STATE:            OffsetToolModeState(v);             break;
     }
 }
 
@@ -639,6 +720,8 @@ void WorkspaceStartDrawingExtensible(){
 }
 
 void WorkspaceCancelDrawingExtensible(){
+    if (drawingExtensiblePoints[0]) free(drawingExtensiblePoints[0]);
+    if (drawingExtensiblePoints[1]) free(drawingExtensiblePoints[1]);
     currentState = IDLE_STATE;
 }
 

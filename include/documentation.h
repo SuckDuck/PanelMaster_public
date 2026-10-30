@@ -34,6 +34,7 @@ typedef enum PageEntitySurfaceFlags {
     PESF_DRAW_ANNOTATIONS = 1 << 0,
     PESF_DRAW_SKINS       = 1 << 1,
     PESF_DRAW_CUTOUTS     = 1 << 2,
+    PESF_DRAW_LABELS      = 1 << 3
 } PageEntitySurfaceFlags;
 
 struct PageEntitySurface {
@@ -41,6 +42,7 @@ struct PageEntitySurface {
     Surface *surface;
     float scale;
     uint32_t flags;
+    float labelsFontSize;
     float annotationsFontSize;
     float annotationsArrowSize;
     int lod;

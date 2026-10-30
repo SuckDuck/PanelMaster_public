@@ -222,8 +222,33 @@ static cJSON *serializeSurface(Surface *s){
     cJSON_AddNumberToObject(pos, "x", s->pos.x);
     cJSON_AddNumberToObject(pos, "y", s->pos.y);
 
+    cJSON *size = cJSON_AddObjectToObject(j, "size");
+    cJSON_AddNumberToObject(size, "w", s->size.x);
+    cJSON_AddNumberToObject(size, "h", s->size.y);
+
     cJSON_AddNumberToObject(j, "rotation", s->rotation);
     cJSON_AddNumberToObject(j, "opts", s->opts);
+
+    cJSON *label = cJSON_AddObjectToObject(j, "label");
+    cJSON_AddStringToObject(label, "text", s->skin.label.text);
+    cJSON_AddNumberToObject(label, "offset_x", s->skin.label.offset.x);
+    cJSON_AddNumberToObject(label, "offset_y", s->skin.label.offset.y);
+    cJSON_AddNumberToObject(label, "rotation", s->skin.label.rotation);
+
+    if (s->opts & SURFACE_OPT_GENERIC){
+        cJSON *color = cJSON_AddObjectToObject(j, "color");
+        cJSON_AddNumberToObject(color, "r", s->skin.tint.r);
+        cJSON_AddNumberToObject(color, "g", s->skin.tint.g);
+        cJSON_AddNumberToObject(color, "b", s->skin.tint.b);
+
+        cJSON *origin = cJSON_AddObjectToObject(j, "origin");
+        cJSON_AddNumberToObject(origin, "x", s->origin.x);
+        cJSON_AddNumberToObject(origin, "y", s->origin.y);
+
+        cJSON *cutoutsRect = cJSON_AddObjectToObject(j, "cutouts_rects");
+        cJSON_AddNumberToObject(cutoutsRect, "w", s->cutout.rect.x);
+        cJSON_AddNumberToObject(cutoutsRect, "h", s->cutout.rect.y);
+    }
 
     cJSON *anchors = cJSON_AddArrayToObject(j, "anchors");
     for (int i=0; i<3; i++){

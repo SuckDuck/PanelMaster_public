@@ -289,57 +289,33 @@ Vector2 BlenderToRaylib(Vector2 v){
 	};
 }
 
-void DrawTextureFromScreenSpace(Texture2D *texture, Vector2 *points, int pointCount, Color tint){
-	if (!texture) return;
-	if (pointCount < 3) return;
-	rlSetTexture(texture->id);
-	rlBegin(RL_TRIANGLES);
-	
-	// not really, but it works as
-	Vector2 center = Vector2Lerp(
-		Vector2Lerp(points[0], points[1], 0.5f), 
-		Vector2Lerp(points[1], points[2], 0.5f), 
-		0.5f
-	);
+void ErasePolygon(Vector2 *points, int pointCount){
+    if (!points || pointCount < 3) return;
 
-	rlColor4ub(tint.r, tint.g, tint.b, tint.a);
-	Vector2 centerUV = {
-		center.x / texture->width,
-		(center.y / texture->height)*-1
-	};
+    BeginBlendMode(BLEND_CUSTOM);
+    rlSetBlendFactors(RL_ONE, RL_ZERO, RL_FUNC_ADD);
 
-	for (int i = 0; i < pointCount - 1; i++) {
-		float uvs[] = {
-			points[i].x / texture->width,
-			(points[i].y / texture->height)*-1,
-			points[i+1].x / texture->width,
-			(points[i+1].y / texture->height)*-1,
-		};
+    rlBegin(RL_TRIANGLES);
 
-		// CW
-		rlTexCoord2f(centerUV.x, centerUV.y);
-		rlVertex2f(center.x, center.y);
+    Vector2 center = Vector2Lerp(
+        Vector2Lerp(points[0], points[1], 0.5f),
+        Vector2Lerp(points[1], points[2], 0.5f),
+        0.5f
+    );
 
-		rlTexCoord2f(uvs[0], uvs[1]);
-		rlVertex2f(points[i].x, points[i].y);
+    rlColor4ub(0, 0, 0, 0);
+    for (int i = 0; i < pointCount - 1; i++) {
+        rlVertex2f(center.x, center.y);
+        rlVertex2f(points[i].x, points[i].y);
+        rlVertex2f(points[i+1].x, points[i+1].y);
 
-		rlTexCoord2f(uvs[2], uvs[3]);
-		rlVertex2f(points[i+1].x, points[i+1].y);
+        rlVertex2f(center.x, center.y);
+        rlVertex2f(points[i+1].x, points[i+1].y);
+        rlVertex2f(points[i].x, points[i].y);
+    }
 
-		// CCW
-		rlTexCoord2f(centerUV.x, centerUV.y);
-		rlVertex2f(center.x, center.y);
-
-		rlTexCoord2f(uvs[2], uvs[3]);
-		rlVertex2f(points[i+1].x, points[i+1].y);
-
-		rlTexCoord2f(uvs[0], uvs[1]);
-		rlVertex2f(points[i].x, points[i].y);
-
-	}
-
-	rlEnd();
-	rlSetTexture(rlGetTextureIdDefault());
+    rlEnd();
+    EndBlendMode();
 }
 
 float NormalizeAngle(float angle){
@@ -406,15 +382,15 @@ void mu_vertical_space(mu_Context *ctx, int height){
   mu_space(ctx);
 }
 
-static bool mu_tab(mu_Context *ctx, const char *label, bool state, int opt){
-	int res = false;
+int mu_tab(mu_Context *ctx, const char *label, bool state, int opt){
+	int res = 0;
 	mu_Id id = mu_get_id(ctx, label, strlen(label));
 	mu_Rect r = mu_layout_next(ctx);
 	mu_update_control(ctx, id, r, opt);
 
 	/* handle click */
-	if (ctx->mouse_pressed == MU_MOUSE_LEFT && ctx->focus == id)
-		res = true;
+	if (ctx->mouse_pressed == MU_MOUSE_LEFT && ctx->focus == id) res = 1;
+	if (ctx->mouse_pressed == MU_MOUSE_RIGHT && ctx->focus == id) res = 2;
 
 	/* draw */
 	if (!(opt & MU_OPT_NOFRAME)){
@@ -430,7 +406,7 @@ static bool mu_tab(mu_Context *ctx, const char *label, bool state, int opt){
 
 void mu_tabs(mu_Context *ctx, int tab_count, const char **labels, int *state, int opt){
 	for (int i=0; i<tab_count; i++){
-		if (mu_tab(ctx, labels[i], *state == i, opt))
+		if (mu_tab(ctx, labels[i], *state == i, opt) == 1)
 			*state = i;
 	}
 }
@@ -465,7 +441,7 @@ void mu_equal_layout_l(mu_Context *ctx, int q, const int *labels_widths){
 	mu_layout_row(ctx, cols, widths, 0);
 }
 
-void mu_equal_layout_l_auto(mu_Context *ctx, const char **labels, int height){
+void mu_equal_layout_l_auto(mu_Context *ctx, const char **labels, int height, int *maxwidth, int *extraw){
 	mu_Container *cnt = mu_get_current_container(ctx);
 
 	int spacing = ctx->style->spacing;
@@ -475,8 +451,7 @@ void mu_equal_layout_l_auto(mu_Context *ctx, const char **labels, int height){
 	while (labels[q]) q++;
 
 	int cols = q * 2;
-
-	int inner_w = cnt->body.w - 2 * padding;
+	int inner_w = maxwidth ? *maxwidth : cnt->body.w - 2 * padding;
 
 	int labels_total_w = 0;
 	int label_w[64];
@@ -498,8 +473,24 @@ void mu_equal_layout_l_auto(mu_Context *ctx, const char **labels, int height){
 	int widths[64];
 
 	for (int i = 0; i < q; i++) {
-		widths[i * 2] = label_w[i];
-		widths[i * 2 + 1] = widget_w;
+		int i0 = i * 2;
+		int i1 = i * 2 + 1;
+		
+		widths[i0] = label_w[i];
+		widths[i1] = widget_w;
+
+		if (extraw && i == q-1){
+			for (int *ii = extraw; *ii != 0; ii++){
+				widths[++i1] = *ii;
+			}
+			
+			break;
+		}
+	}
+
+	if (extraw){
+		for (int *i = extraw; *i != 0; i++)
+			cols++;
 	}
 
 	mu_layout_row(ctx, cols, widths, height);

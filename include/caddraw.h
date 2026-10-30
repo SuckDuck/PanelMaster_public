@@ -49,7 +49,7 @@ Vector2 MeasureCadText(CadFont *font, const char *text, int textLen, float fontS
 void OpenCadPath();
 void CloseCadPath();
 void DrawCadLine(Vector2 startPos, Vector2 endPos, float thick, Color color);
-void DrawCadBG(Texture2D *texture, Vector2 *points, int pointCount, Color tint);
+void EraseCadArea(Vector2 *points, int pointCount);
 void DrawCadText(CadFont *font, const char *text, Vector2 position, Vector2 origin, float rotation, float fontSize, float xspacing, float yspacing, CadTextAlign align, Color tint);
 void SetCadScissors(Rectangle rect);
 void UnsetCadScissors();

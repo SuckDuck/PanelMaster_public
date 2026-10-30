@@ -22,7 +22,8 @@
 <h2>Tabla de contenidos</h2>
 
 <ul id="toc">
-    <li><a href="#quickstart">Inicio rápido</a></li>
+    <li><a href="#getting_started">Inicio Rápido</a></li>
+    <li><a href="#introduction">Introducción</a></li>
     <li><a href="#surfaces-basics">Conceptos básicos de Surfaces</a></li>
     <li><a href="#anchors">Anchors</a></li>
     <li><a href="#extensible-surfaces">Extensible Surfaces</a></li>
@@ -36,9 +37,18 @@
     <li><a href="#title-block-editor">Title Block Editor</a></li>
 </ul>
 
-<h2 id="quickstart">Inicio rápido</h2>
+<h2 id="getting_started">Inicio Rápido</h2>
 
-<p>Esta es la pantalla inicial que aparece al iniciar PanelMaster:</p>
+
+<p>Para empezar rápidamente, mira este breve video que explica los conceptos básicos de forma práctica y te muestra cómo diseñar un panel de control eléctrico en tan solo 5 minutos.</p>
+
+<video controls style="width: 100%; height: auto;">
+    <source src="media/tutorial.mp4" type="video/mp4">
+</video>
+
+<h2 id="introduction">Introducción</h2>
+
+<p>Bienvenido a PanelMaster! <br>Esta es la pantalla inicial que aparece al iniciar el software:</p>
 
 <img src="media/firstView.png" alt="FirstView" width="800">
 
@@ -279,6 +289,34 @@
     Your browser does not support HTML5 video playback.
 </video>
 
+<div class="new-feature-box">
+    <span class="new-feature">NEW · VBETA1.3.0</span> :
+    <ul>
+        <li>
+            Ahora es posible añadir labels a los componentes, las cuales se dibujan
+            junto al componente. Su posición relativa al componente y su orientación
+            pueden modificarse mediante las opciones del panel lateral.
+        </li>
+
+        <li>
+            Ahora es posible modificar las dimensiones de los componentes directamente
+            desde el panel lateral. Las dimensiones originales pueden restaurarse en
+            cualquier momento mediante la opción correspondiente.
+        </li>
+
+        <li>
+            Ahora es posible añadir componentes genéricos a una surface. Sus dimensiones
+            de boundary y cutout, color y offset pueden personalizarse mediante las opciones
+            del panel lateral.
+        </li>
+    </ul>
+
+    <video autoplay loop muted playsinline width="800">
+        <source src="media/surfaces/generics.mp4" type="video/mp4">
+        Your browser does not support HTML5 video playback.
+    </video>
+</div>
+
 <h2 id="anchors">Anchors</h2>
 
 <p>
@@ -288,6 +326,25 @@
     Los anchors pueden ser horizontales o verticales y pueden tener distintos
     tipos de constraints establecidos entre ellos y con las surfaces.
 </p>
+
+<div class="new-feature-box">
+    <span class="new-feature">NUEVO · VBETA1.2.0</span> :
+    <ul>
+        <li>
+            Para añadir un anchor de offset rápidamente, presiona <strong>O</strong>
+            para entrar en el modo Offset. Luego, haz clic sobre el anchor que deseas
+            utilizar como referencia y arrastra el ratón para definir la distancia
+            deseada. Suelta el botón del ratón para crear el nuevo anchor en la
+            posición indicada.
+        </li>
+    </ul>
+
+    <video autoplay loop muted playsinline width="800">
+        <source src="media/anchors/quick_offset.mp4" type="video/mp4">
+        Your browser does not support HTML5 video playback.
+    </video>
+
+</div>
 
 <ul>
     <li>
@@ -400,6 +457,42 @@
         <source src="media/surfaces/extensiblesquickadd.mp4" type="video/mp4">
         Your browser does not support HTML5 video playback.
     </video>
+</div>
+
+<div class="new-feature-box">
+    <span class="new-feature">NUEVO · VBETA1.2.0</span> :
+    <ul>
+        <li>
+            Al dibujar una superficie extensible, si se traza un recorrido rectangular,
+            se crea automáticamente un marco utilizando la extensible surface
+            seleccionada, con cortes a 45 grados en cada esquina. Al igual que con las
+            extensible surfaces normales, se utilizarán los anchors existentes
+            siempre que se encuentren anchors compatibles. De lo contrario, se mostrará
+            un error, a menos que la opción <strong>Create Anchors</strong> esté activada,
+            en cuyo caso se crearán automáticamente los anchors necesarios.
+        </li>
+    </ul>
+
+    <video autoplay loop muted playsinline width="800">
+        <source src="media/surfaces/extensible_quick_frame.mp4" type="video/mp4">
+        Your browser does not support HTML5 video playback.
+    </video>
+
+    <ul>
+        <li>
+            Ahora es más fácil realizar cortes a 45 grados en extensible surfaces gracias
+            a los nuevos botones de corte, que permiten aplicar rápidamente el corte deseado
+            sin tener que introducir manualmente sus dimensiones. Los campos
+            <strong>LCut</strong> y <strong>RCut</strong> siguen disponibles para especificar
+            medidas de corte personalizadas cuando sea necesario.
+        </li>
+    </ul>
+    
+    <video autoplay loop muted playsinline width="800">
+        <source src="media/surfaces/extensible_fast_cuts.mp4" type="video/mp4">
+        Your browser does not support HTML5 video playback.
+    </video>
+
 </div>
 
 <ul>

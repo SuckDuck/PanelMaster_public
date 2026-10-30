@@ -52,6 +52,12 @@
 #   define PATH_SEP '\\'
 #   define PATH_MAX MAX_PATH
 #   include <windows.h>
+#elif defined(__EMSCRIPTEN__)
+#   define TTF_WASM
+#   define _DEFAULT_SOURCE 1
+#   define PATH_SEP '/'
+#   define PATH_MAX 4096
+#   include <dirent.h>
 #endif
 
 #include "ttf2mesh.h"
@@ -1877,7 +1883,7 @@ static bool check_by_mask(const char *file_name, const char *mask)
     }
 }
 
-#if defined(TTF_LINUX) || defined(TTF_ANDROID)
+#if defined(TTF_LINUX) || defined(TTF_ANDROID) || defined(TTF_WASM)
 static ttf_t **load_fonts_from_dir(ttf_t **list, int *count, int *cap, const char *dir, char *fullpath, int deepmax, const char *mask)
 {
     DIR *d;

@@ -4,13 +4,14 @@ import origami.build as origami
 import sys, shutil
 
 project_name = "panelmaster"
-project_version = "BETA1.1.0"
+project_version = "BETA1.3.0"
 
 CC          = "gcc"
 BUILD_DIR   = "build"
 DIST_DIR    = "dist"
 ASSETS_DIR  = "assets"
 STATICS_DIR = "statics"
+LIB_PATHS   = []
 
 CFLAGS =  [
     "-g", 
@@ -88,7 +89,6 @@ def statics():
     ])
 
 def linux(aditional_macros:Dict):
-    LIB_PATHS = []
     LINKS = ["-lX11","-lm","-lraylib", "-lGL"]
     LDFLAGS = []
     
@@ -98,7 +98,6 @@ def linux(aditional_macros:Dict):
     link(CC, objs, LIB_PATHS, LINKS, LDFLAGS, BUILD_DIR, f'"{project_name}"')
 
 def windows(aditional_macros:Dict):
-    LIB_PATHS = []
     LINKS = ["-lraylib", "-lgdi32", "-lwinmm"]
     LDFLAGS = ["-mwindows"]
 
@@ -116,7 +115,8 @@ if __name__ == "__main__":
     statics()
     if "statics" in sys.argv: exit(0)
 
-    if   sys.platform.startswith("linux") : linux({"ROOT": '"."' if "dist" in sys.argv else '".."'})
+    if "web" in sys.argv: web({"ROOT":'"."'}); exit(0)
+    elif sys.platform.startswith("linux") : linux({"ROOT": '"."' if "dist" in sys.argv else '".."'})
     elif sys.platform.startswith("cygwin"): windows({"ROOT": '"."' if "dist" in sys.argv else '".."'})
     elif sys.platform.startswith("win32") : print("Please run this build using MSYS2-MINGW64 with MinGW-w64 GCC"); exit(1)
     else : print("Non supported platform"); exit(1)

@@ -10,8 +10,9 @@ typedef struct InspectorSettings {
     int enableGrid;
     int enableAnchors;
     int enableAnnotations;
-    int DrawSkins;
-    int DrawCutOuts;
+    int drawLabels;
+    int drawSkins;
+    int drawCutOuts;
     float gridSpacing;
 } InspectorSettings;
 

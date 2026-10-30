@@ -937,6 +937,7 @@ static int LoadSurfaceComponentV0(cJSON *j){
     }
 
     s->size = (Vector2){width->valuedouble, height->valuedouble};
+    s->ogSize = s->size;
     if (skin.pointsQ > 0){
         skin.surface = s;
         s->skin = skin;
@@ -951,6 +952,8 @@ static int LoadSurfaceComponentV0(cJSON *j){
     if (!s->parent->parent || s->parent->type == SURFACE_EXTENSIBLE)
         s->pos = Vector2Zero();
     else s->pos = (Vector2){s->parent->size.x/2 + s->size.x/2,0};
+
+    s->skin.label.offset.y = s->size.y/2 *-1 -10;
         
     return rs;
 }
@@ -1198,6 +1201,7 @@ static int LoadTemplateV0(cJSON *j){
         newTreeList[newTreeListQ]->baseSurface.tree = newTreeList[newTreeListQ];
         newTreeList[newTreeListQ]->surfacesQ = 1;
         newTreeList[newTreeListQ]->baseSurface.size = (Vector2){width->valuedouble, height->valuedouble};
+        newTreeList[newTreeListQ]->baseSurface.ogSize = newTreeList[newTreeListQ]->baseSurface.size;
         newTreeList[newTreeListQ]->baseSurface.id = calloc(strlen(name->valuestring) + 1, sizeof(char));
         newTreeList[newTreeListQ]->baseSurface.name = calloc(strlen(name->valuestring) + 1, sizeof(char));
         newTreeList[newTreeListQ]->baseSurface.opts = 0;
@@ -1412,6 +1416,7 @@ static int ReloadTemplateV0(cJSON *j){
         if (matchingTree){
             matchingTree->baseSurface.size.x = width->valuedouble;
             matchingTree->baseSurface.size.y = height->valuedouble;
+            matchingTree->baseSurface.ogSize = matchingTree->baseSurface.size;
             if (skin.points){
                 skin.surface = &matchingTree->baseSurface;
                 matchingTree->baseSurface.skin = skin;
@@ -1434,6 +1439,7 @@ static int ReloadTemplateV0(cJSON *j){
             newTree->surfacesQ = 1;
 
             newTree->baseSurface.size = (Vector2){ width->valuedouble, height->valuedouble};
+            newTree->baseSurface.ogSize = newTree->baseSurface.size;
             newTree->baseSurface.id = calloc(strlen(name->valuestring) + 1, sizeof(char));
             newTree->baseSurface.opts = 0;
             strcpy(newTree->baseSurface.id, name->valuestring);
@@ -1602,7 +1608,7 @@ static int VerificateAnnotationV0(cJSON *j){
     return rs;
 }
 
-static int VerificateAsmSurfaceV0(cJSON *j){
+static int VerificateAsmSurfaceV1(cJSON *j){
     int rs = LDRV0_OK;
 
     JSON_REQUIRE_RET(id, j, cJSON_IsString, LDRV0_ERR_ASM, LDRV0_ERR_SURFACE, LDRV0_ERR_ID);
@@ -1621,6 +1627,68 @@ static int VerificateAsmSurfaceV0(cJSON *j){
     JSON_REQUIRE_RET(pos, j, cJSON_IsObject, LDRV0_ERR_ASM, LDRV0_ERR_SURFACE, LDRV0_ERR_POS);
     JSON_REQUIRE_RET(x, pos, cJSON_IsNumber, LDRV0_ERR_ASM, LDRV0_ERR_SURFACE, LDRV0_ERR_POS, LDRV0_ERR_X);
     JSON_REQUIRE_RET(y, pos, cJSON_IsNumber, LDRV0_ERR_ASM, LDRV0_ERR_SURFACE, LDRV0_ERR_POS, LDRV0_ERR_Y);
+
+    // Size
+    cJSON *size = cJSON_GetObjectItem(j, "size");
+    if (size){
+        if (!cJSON_IsObject(size)){
+            SetError(LDRV0_ERR_ASM, LDRV0_ERR_SURFACE, LDRV0_ERR_SIZE, LDRV0_ERR_INVALID, 0);
+            return LDRV0_ERR_CODE;
+        }
+
+        JSON_REQUIRE_RET(w, size, cJSON_IsNumber, LDRV0_ERR_ASM, LDRV0_ERR_SURFACE, LDRV0_ERR_SIZE, LDRV0_ERR_WIDTH);
+        JSON_REQUIRE_RET(h, size, cJSON_IsNumber, LDRV0_ERR_ASM, LDRV0_ERR_SURFACE, LDRV0_ERR_SIZE, LDRV0_ERR_HEIGHT);
+    }
+
+    // Label
+    cJSON *label = cJSON_GetObjectItem(j, "label");
+    if (label){
+        if (!cJSON_IsObject(label)){
+            SetError(LDRV0_ERR_ASM, LDRV0_ERR_SURFACE, LDRV0_ERR_LABEL, LDRV0_ERR_INVALID, 0);
+            return LDRV0_ERR_CODE;
+        }
+
+        JSON_REQUIRE_RET(text, label, cJSON_IsString, LDRV0_ERR_ASM, LDRV0_ERR_SURFACE, LDRV0_ERR_LABEL, LDRV0_ERR_TEXT);
+        JSON_REQUIRE_RET(offset_x, label, cJSON_IsNumber, LDRV0_ERR_ASM, LDRV0_ERR_SURFACE, LDRV0_ERR_LABEL, LDRV0_ERR_X);
+        JSON_REQUIRE_RET(offset_y, label, cJSON_IsNumber, LDRV0_ERR_ASM, LDRV0_ERR_SURFACE, LDRV0_ERR_LABEL, LDRV0_ERR_Y);
+        JSON_REQUIRE_RET(rotation, label, cJSON_IsNumber, LDRV0_ERR_ASM, LDRV0_ERR_SURFACE, LDRV0_ERR_LABEL, LDRV0_ERR_ROT);
+    }
+
+    // Color
+    cJSON *color = cJSON_GetObjectItem(j, "color");
+    if (color){
+        if (!cJSON_IsObject(color)){
+            SetError(LDRV0_ERR_ASM, LDRV0_ERR_SURFACE, LDRV0_ERR_TINT, 0);
+            return LDRV0_ERR_CODE;
+        }
+
+        JSON_REQUIRE_RET(r, color, cJSON_IsNumber, LDRV0_ERR_ASM, LDRV0_ERR_SURFACE, LDRV0_ERR_TINT, LDRV0_ERR_R);
+        JSON_REQUIRE_RET(g, color, cJSON_IsNumber, LDRV0_ERR_ASM, LDRV0_ERR_SURFACE, LDRV0_ERR_TINT, LDRV0_ERR_G);
+        JSON_REQUIRE_RET(B, color, cJSON_IsNumber, LDRV0_ERR_ASM, LDRV0_ERR_SURFACE, LDRV0_ERR_TINT, LDRV0_ERR_B);
+    }
+
+    // Origin
+    cJSON *origin = cJSON_GetObjectItem(j, "origin");
+    if (origin){
+        if (!cJSON_IsObject(origin)){
+            SetError(LDRV0_ERR_ASM, LDRV0_ERR_SURFACE, LDRV0_ERR_ORG, 0);
+            return LDRV0_ERR_CODE;
+        }
+
+        JSON_REQUIRE_RET(x, origin, cJSON_IsNumber, LDRV0_ERR_ASM, LDRV0_ERR_SURFACE, LDRV0_ERR_ORG, LDRV0_ERR_X);
+        JSON_REQUIRE_RET(y, origin, cJSON_IsNumber, LDRV0_ERR_ASM, LDRV0_ERR_SURFACE, LDRV0_ERR_ORG, LDRV0_ERR_Y);
+    }
+
+    cJSON *cutoutsRect = cJSON_GetObjectItem(j, "cutouts_rects");
+    if (cutoutsRect){
+        if (!cJSON_IsObject(cutoutsRect)){
+            SetError(LDRV0_ERR_ASM, LDRV0_ERR_SURFACE, LDRV0_ERR_CUTOUT, LDRV0_ERR_RECT, 0);
+            return LDRV0_ERR_CODE;
+        }
+
+        JSON_REQUIRE_RET(w, cutoutsRect, cJSON_IsNumber, LDRV0_ERR_ASM, LDRV0_ERR_SURFACE, LDRV0_ERR_CUTOUT, LDRV0_ERR_RECT, LDRV0_ERR_WIDTH);
+        JSON_REQUIRE_RET(h, cutoutsRect, cJSON_IsNumber, LDRV0_ERR_ASM, LDRV0_ERR_SURFACE, LDRV0_ERR_CUTOUT, LDRV0_ERR_RECT, LDRV0_ERR_HEIGHT);
+    }
 
     // Rotation
     JSON_REQUIRE_RET(rotation, j, cJSON_IsNumber, LDRV0_ERR_ASM, LDRV0_ERR_SURFACE, LDRV0_ERR_ROT);
@@ -1649,7 +1717,7 @@ static int VerificateAsmSurfaceV0(cJSON *j){
     return 0;
 }
 
-static int VerificateTreeV0(cJSON *j){
+static int VerificateTreeV1(cJSON *j){
     int rs = LDRV0_OK;
 
     JSON_REQUIRE_RET(name, j, cJSON_IsString, LDRV0_ERR_ASM, LDRV0_ERR_NAME);
@@ -1682,14 +1750,14 @@ static int VerificateTreeV0(cJSON *j){
     JSON_REQUIRE_RET(surfaces, j, cJSON_IsArray, LDRV0_ERR_ASM, LDRV0_ERR_SURFACE, LDRV0_ERR_SECTION);
     cJSON *surface;
     cJSON_ArrayForEach(surface, surfaces){
-        int rs = VerificateAsmSurfaceV0(surface);
+        int rs = VerificateAsmSurfaceV1(surface);
         if (rs != LDRV0_OK) return rs;
     }
     
     return LDRV0_OK;
 }
 
-static int LoadAssemblyV0(cJSON *j){
+static int LoadAssemblyV1(cJSON *j){
     int rs = LDRV0_OK;
     invalidSurfaceFilename[0] = '\0';
     
@@ -1700,7 +1768,7 @@ static int LoadAssemblyV0(cJSON *j){
     JSON_REQUIRE_RET(surface_trees, j, cJSON_IsArray, LDRV0_ERR_ASM, LDRV0_ERR_SURFACE, LDRV0_ERR_TREE );
     cJSON *tree;
     cJSON_ArrayForEach(tree, surface_trees){
-        rs = VerificateTreeV0(tree);
+        rs = VerificateTreeV1(tree);
         if (rs != LDRV0_OK) 
             return rs;
     }
@@ -1721,7 +1789,12 @@ static int LoadAssemblyV0(cJSON *j){
         cJSON *surface;
         char surfacePath[OG_PATH_MAX] = {0};
         cJSON_ArrayForEach(surface, cJSON_GetObjectItem(tree, "surfaces")){
+            uint32_t opts = cJSON_GetObjectItem(surface, "opts")->valueint;
+            if (opts & SURFACE_OPT_GENERIC) 
+                continue;
+
             char *id = cJSON_GetObjectItem(surface, "id")->valuestring;
+            
             if (strlen(id) >= OG_PATH_MAX){
                 SetError(LDRV0_ERR_ASM, LDRV0_ERR_INVALID, LDRV0_ERR_SURFACE, LDRV0_ERR_NAME, 0);
                 return LDRV0_ERR_CODE;
@@ -1936,6 +2009,13 @@ static int LoadAssemblyV0(cJSON *j){
                 cJSON_GetObjectItem(posJson, "y")->valuedouble
             };
 
+            Vector2 size;
+            cJSON *sizeJson = cJSON_GetObjectItem(surface, "size");
+            if (sizeJson){
+                size.x = cJSON_GetObjectItem(sizeJson, "w")->valuedouble;
+                size.y = cJSON_GetObjectItem(sizeJson, "h")->valuedouble;
+            }
+
             float rotation = cJSON_GetObjectItem(surface, "rotation")->valuedouble;
             uint32_t opts = cJSON_GetObjectItem(surface, "opts")->valueint;
             AnchorAlign anchorAlign = cJSON_GetObjectItem(surface, "anchor_align")->valueint;
@@ -1980,8 +2060,14 @@ static int LoadAssemblyV0(cJSON *j){
                 }
             }
 
-            bool r = LoadSurface(surfacePath, NULL);
-            Surface *s = st->lastInsertedSurface;
+            Surface *s = NULL;
+            if (opts & SURFACE_OPT_GENERIC)
+                s = AddSurface(activeTree->surfaceSelection[0], "generic", "doesnt matter hehe", SURFACE_COMPONENT);
+            
+            else {
+                bool r = LoadSurface(surfacePath, NULL);
+                s = st->lastInsertedSurface;
+            }
 
             cJSON *name = cJSON_GetObjectItem(surface, "name");
             if (name && cJSON_IsString(name)){
@@ -1992,7 +2078,36 @@ static int LoadAssemblyV0(cJSON *j){
                 }
             }
 
+            cJSON *label = cJSON_GetObjectItem(surface, "label");
+            if (label){
+                snprintf(s->skin.label.text, sizeof(s->skin.label.text), "%s", cJSON_GetObjectItem(label, "text")->valuestring);
+                s->skin.label.offset.x = cJSON_GetObjectItem(label, "offset_x")->valuedouble;
+                s->skin.label.offset.y = cJSON_GetObjectItem(label, "offset_y")->valuedouble;
+                s->skin.label.rotation = cJSON_GetObjectItem(label, "rotation")->valuedouble;
+            }
+
+            cJSON *colorJson = cJSON_GetObjectItem(surface, "color");
+            if (colorJson){
+                s->skin.tint.r = cJSON_GetObjectItem(colorJson, "r")->valuedouble;
+                s->skin.tint.g = cJSON_GetObjectItem(colorJson, "g")->valuedouble;
+                s->skin.tint.b = cJSON_GetObjectItem(colorJson, "b")->valuedouble;
+                s->skin.tint.a = 255;
+            }
+
+            cJSON *originJson = cJSON_GetObjectItem(surface, "origin");
+            if (originJson){
+                s->origin.x = cJSON_GetObjectItem(originJson, "x")->valuedouble;
+                s->origin.y = cJSON_GetObjectItem(originJson, "y")->valuedouble;
+            }
+
+            cJSON *cutoutJson = cJSON_GetObjectItem(surface, "cutouts_rects");
+            if (cutoutJson){
+                s->cutout.rect.x = cJSON_GetObjectItem(cutoutJson, "w")->valuedouble;
+                s->cutout.rect.y = cJSON_GetObjectItem(cutoutJson, "h")->valuedouble;
+            }
+
             s->pos = pos;
+            if (sizeJson) s->size = size;
             s->rotation = rotation;
             s->opts = opts;
             s->anchorAlign = anchorAlign;
@@ -2477,8 +2592,9 @@ bool LoadAssembly(char *path, void *param){
     loadedAssemblyFile = &f;
     
     switch (f.version){
-        case 0:{ 
-            rs = LoadAssemblyV0(f.root);
+        case 0:
+        case 1:{ 
+            rs = LoadAssemblyV1(f.root);
             if (invalidSurfaceFilename[0] != '\0'){
                 OG_PushLog("Surface file is missing or invalid: %s", invalidSurfaceFilename);
                 invalidSurfaceFilename[0] = '\0';

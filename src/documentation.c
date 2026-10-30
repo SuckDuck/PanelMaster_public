@@ -188,6 +188,7 @@ PageEntitySurface *AddSurfaceEntity(Page *p, Surface *s){
 
     es->annotationsFontSize = OG.defaultFontSize;
     es->annotationsArrowSize = 10.0f;
+    es->labelsFontSize = 10.0f;
     
     return es;
 }
@@ -411,23 +412,20 @@ bool ExportDoc2PDF(Document *doc, char *path){
         for (PageEntity *pe = p->entities; pe != NULL; pe = pe->next){
             switch (pe->type){
                 case PAGE_ENTITY_SURFACE: {
-                    Texture tmptxt;
-                    // Yes, it is empty. It is used
-                    // only to satisfy validation checks.
-
                     DrawSurfaceTree(
                         &tmp, pe->surface->surface->tree, 
                         pe->surface->lod, 
-                        &tmptxt, 
                         pe->pos, 
                         pe->surface->scale, 
                         BLACK, 
                         BLACK,
                         HATCH_SPACE,
+                        pe->surface->labelsFontSize,
                         false, false, false, 
                         true,
                         pe->surface->flags & PESF_DRAW_SKINS,
                         pe->surface->flags & PESF_DRAW_CUTOUTS,
+                        pe->surface->flags & PESF_DRAW_LABELS,
                         false
                     );
 
@@ -560,10 +558,6 @@ bool ExportSurface2SVG(PageEntitySurface *s, char *path){
     tmp.camera.offset = Vector2Zero();
     tmp.camera.rotation = 0.0f;
     tmp.camera.zoom = 1.0f;
-    
-    Texture tmptxt;
-    // Yes, it is empty. It is used
-    // only to satisfy validation checks.
 
     PageEntity *entity = mainDocument.selectedPage->selectedEntity;
     SurfaceTree *tree = entity->surface->surface->tree;
@@ -586,16 +580,17 @@ bool ExportSurface2SVG(PageEntitySurface *s, char *path){
         DrawSurfaceTree(
             &tmp, tree, 
             entity->surface->lod, 
-            &tmptxt, 
             offset, 
             1.0, 
             BLACK, 
             BLACK, 
             0.0f, 
+            entity->surface->labelsFontSize/entity->surface->scale,
             false, false, false, 
             true, 
             entity->surface->flags & PESF_DRAW_SKINS , 
             entity->surface->flags & PESF_DRAW_CUTOUTS, 
+            entity->surface->flags & PESF_DRAW_LABELS,
             false
         );
 
@@ -653,10 +648,6 @@ bool ExportSurfaceCutouts2DXF(SurfaceTree *t, char *path){
     tmp.camera.offset = Vector2Zero();
     tmp.camera.rotation = 0.0f;
     tmp.camera.zoom = 1.0f;
-    
-    Texture tmptxt;
-    // Yes, it is empty. It is used
-    // only to satisfy validation checks.
 
     dxf.layer = "CUTOUTS";
     dxf.color = 2;
@@ -664,7 +655,6 @@ bool ExportSurfaceCutouts2DXF(SurfaceTree *t, char *path){
         &tmp, 
         activeTree, 
         0, 
-        &tmptxt, 
         (Vector2){
             activeTree->baseSurface.size.x/2, 
             activeTree->baseSurface.size.y/2
@@ -672,11 +662,12 @@ bool ExportSurfaceCutouts2DXF(SurfaceTree *t, char *path){
         1.0f, 
         WHITE, 
         WHITE, 
+        0.0f,
         0.0f, 
         false, true, 
         false, true, 
         false, true,
-        true
+        false, true
     );
 
     SetCadOutput(CAD_OUTPUT_DEFAULT, NULL);

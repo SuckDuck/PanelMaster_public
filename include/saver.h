@@ -6,7 +6,7 @@
 
 #include <stdbool.h>
 
-#define ASSEMBLIES_VERSION 0
+#define ASSEMBLIES_VERSION 1
 #define TITLEBLOCKS_VERSION 0
 
 bool SaveTitleBlock(char *path, void *param);

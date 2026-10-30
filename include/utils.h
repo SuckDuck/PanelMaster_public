@@ -32,7 +32,7 @@ void DrawLineDashedEx(Vector2 A, Vector2 B, float thickness, float dashSize, flo
 void DrawDashedRect(Rectangle r, float thickness, float dashSize, float gapSize, Color color);
 void DrawHatchPoly(Vector2 *p, int pQ, float space, Color c);
 Vector2 BlenderToRaylib(Vector2 v);
-void DrawTextureFromScreenSpace(Texture2D *texture, Vector2 *points, int pointCount, Color tint);
+void ErasePolygon(Vector2 *points, int pointCount);
 float NormalizeAngle(float angle);
 bool IsBlank(const char *str);
 Color ColorWithAlpha(Color c, int alpha);
@@ -42,9 +42,10 @@ void DrawTextureTile(Texture2D texture, int indexX, int indexY, int posX, int po
 int mu_number_custom(mu_Context *ctx, mu_Real *value, mu_Real step, const char *fmt, int opt);
 void mu_space(mu_Context *ctx);
 void mu_vertical_space(mu_Context *ctx, int height);
+int mu_tab(mu_Context *ctx, const char *label, bool state, int opt);
 void mu_tabs(mu_Context *ctx, int tab_count, const char **labels, int *state, int opt);
 void mu_equal_layout_l(mu_Context *ctx, int q, const int *labels_widths);
-void mu_equal_layout_l_auto(mu_Context *ctx, const char **labels, int height);
+void mu_equal_layout_l_auto(mu_Context *ctx, const char **labels, int height, int *maxwidth, int *extraw);
 void mu_infinite_input(mu_Context *ctx, char *id, char **str);
 
 #endif

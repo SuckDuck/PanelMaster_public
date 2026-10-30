@@ -27,6 +27,12 @@
 // NOTE: DrawExtensibleSkin assumes axis-aligned rotations (0/90/180/270).
 // Should be updated if full arbitrary rotation support is introduced.
 
+// WARNING: DeleteSurface(Surface *s) uses recursion to delete child surfaces.
+// Deep surface hierarchies can cause a stack overflow, especially on Windows
+// where the available stack may be limited. Consider replacing the recursive
+// traversal with an iterative approach, possibly using the linear surface tree
+// instead of following the parent-child hierarchy.
+
 /* <== Surfaces ================================================> */
 
 static bool IsSurfaceRelated2Anchor(Surface *s, Anchor *a);
@@ -350,28 +356,52 @@ static void DrawSurfaceBoundaries(RectCorners rc, Color c, bool dashed){
     }
 }
 
-static void DrawSurfaceCutout(OG_Viewport *v, Surface *s, Vector2 pos, float rotation, float scale, bool flipX, bool flipY, float lineSpace, Color c){
-    if (!s) return;
-    if (!s->cutout.points) return;
+static void DrawSurfaceCutout(OG_Viewport *v, Surface *s, Vector2 pos, float rotation, Vector2 scale, bool flipX, bool flipY, float lineSpace, Color c){
+    if (!s || !v) return;
 
-    Vector2 points[s->cutout.len];
-    for (int i=0; i<s->cutout.len; i++){
-        Vector2 ver = Vector2RotateDegrees(BlenderToRaylib(s->cutout.points[i]), rotation);
-        ver = (Vector2){ver.x*scale, ver.y*scale};
-        
-        points[i] = GetWorldToScreen2D(
-            (Vector2){
-                ver.x * (flipX ? -1:1) + pos.x,
-                ver.y * (flipY ? -1:1) + pos.y
-            }, 
-            v->camera
-        );     
+    bool useRect = s->cutout.rect.x > 0 && s->cutout.rect.y > 0;
+
+    if (!useRect && (!s->cutout.points || s->cutout.len < 3))
+        return;
+
+    int pointsQ = useRect ? 4 : s->cutout.len;
+    Vector2 points[pointsQ];
+
+    if (useRect) {
+        Vector2 rect = s->cutout.rect;
+
+        points[0] = (Vector2){-rect.x/2, -rect.y/2};
+        points[1] = (Vector2){rect.x/2, -rect.y/2};
+        points[2] = (Vector2){rect.x/2, rect.y/2};
+        points[3] = (Vector2){-rect.x/2, rect.y/2};
     }
 
-    DrawHatchPoly(points, s->cutout.len, lineSpace, c);
+    for (int i = 0; i < pointsQ; i++) {
+        Vector2 source = useRect ? points[i] : s->cutout.points[i];
+
+        Vector2 ver = {
+            source.x * scale.x,
+            source.y * scale.y
+        };
+
+        ver = Vector2RotateDegrees(BlenderToRaylib(ver), rotation);
+
+        points[i] = GetWorldToScreen2D(
+            (Vector2){
+                ver.x * (flipX ? -1 : 1) + pos.x,
+                ver.y * (flipY ? -1 : 1) + pos.y
+            },
+            v->camera
+        );
+    }
+
+    DrawHatchPoly(points, pointsQ, lineSpace, c);
 }
 
-static bool DrawSurfaceSkin(OG_Viewport *v, Vector2 *mask, int maskC, Skin skin, int lod, Color color, Vector2 pos, float rotation, float scale, bool flipX, bool flipY){
+// TODO: Move transformations (scale, rotation, position and flips) to the GPU
+// to improve rendering performance
+
+static bool DrawSurfaceSkin(OG_Viewport *v, Vector2 *mask, int maskC, Skin skin, int lod, Color color, Vector2 pos, float rotation, Vector2 scale, bool flipX, bool flipY){
     if (skin.lodsQ <= 0) return false;
     if (skin.pointsQ <= 0) return false;
     if (skin.points == NULL) return false;
@@ -381,8 +411,9 @@ static bool DrawSurfaceSkin(OG_Viewport *v, Vector2 *mask, int maskC, Skin skin,
     // Project the points
     Vector2 points[skin.pointsQ];
     for (int i=0; i<skin.pointsQ; i++){
-        Vector2 ver = Vector2RotateDegrees(BlenderToRaylib(skin.points[i]), rotation);
-        ver = (Vector2){ver.x*scale, ver.y*scale};
+        Vector2 ver = (Vector2){skin.points[i].x*scale.x, skin.points[i].y*scale.y};
+        ver = Vector2RotateDegrees(BlenderToRaylib(ver), rotation);
+        
         if (v){
             points[i] = GetWorldToScreen2D(
                 (Vector2){
@@ -417,7 +448,7 @@ static bool DrawSurfaceSkin(OG_Viewport *v, Vector2 *mask, int maskC, Skin skin,
     return true;
 }
 
-static bool DrawExtensibleSkin(OG_Viewport *v, RectCorners rc, Texture *bg, Skin skin, int lod, Color color, Vector2 pos, float rotation, float scale, bool flipX, bool flipY){
+static bool DrawExtensibleSkin(OG_Viewport *v, RectCorners rc, Skin skin, int lod, Color color, Vector2 pos, float rotation, float scale, bool flipX, bool flipY){
     if (skin.lodsQ <= 0) return false;
     if (skin.pointsQ <= 0) return false;
     if (skin.points == NULL) return false;
@@ -445,7 +476,7 @@ static bool DrawExtensibleSkin(OG_Viewport *v, RectCorners rc, Texture *bg, Skin
                 v, rc.points, 4, 
                 skin, lod, color, 
                 (Vector2){pos.x, pos.y}, 
-                rotation, scale, 
+                rotation, Vector2Scale(Vector2One(), scale), 
                 flipX, flipY
             );
         }
@@ -459,7 +490,7 @@ static bool DrawExtensibleSkin(OG_Viewport *v, RectCorners rc, Texture *bg, Skin
                     isHorizontal ? (pos.x + acc):pos.x, 
                     isHorizontal ? pos.y : (pos.y + acc)
                 }, 
-                rotation, scale, 
+                rotation, Vector2Scale(Vector2One(), scale), 
                 flipX, flipY
             );
         }
@@ -472,7 +503,7 @@ static bool DrawExtensibleSkin(OG_Viewport *v, RectCorners rc, Texture *bg, Skin
                     isHorizontal ? (pos.x + acc):pos.x, 
                     isHorizontal ? pos.y : (pos.y + acc)
                 }, 
-                rotation, scale, 
+                rotation, Vector2Scale(Vector2One(), scale), 
                 flipX, flipY
             );
         }
@@ -498,7 +529,7 @@ static bool DrawExtensibleSkin(OG_Viewport *v, RectCorners rc, Texture *bg, Skin
                         isHorizontal ? (pos.x - acc):pos.x, 
                         isHorizontal ? pos.y : (pos.y - acc)
                     }, 
-                    rotation, scale, 
+                    rotation, Vector2Scale(Vector2One(), scale), 
                     flipX, flipY
                 );
             }
@@ -511,7 +542,7 @@ static bool DrawExtensibleSkin(OG_Viewport *v, RectCorners rc, Texture *bg, Skin
                         isHorizontal ? (pos.x - acc):pos.x, 
                         isHorizontal ? pos.y : (pos.y - acc)
                     }, 
-                    rotation, scale, 
+                    rotation, Vector2Scale(Vector2One(), scale), 
                     flipX, flipY
                 );
             }
@@ -525,14 +556,14 @@ static bool DrawExtensibleSkin(OG_Viewport *v, RectCorners rc, Texture *bg, Skin
     return true;
 }
 
-void DrawSurfaceTree(OG_Viewport *v, SurfaceTree *tree, int lod, Texture *bg, Vector2 offset, float scale, Color lineColor, Color cutoutColor, float hatchLineSpace, bool flipX, bool flipY, bool drawBounds, bool noSelectionLines, bool drawSkins, bool drawcutouts, bool omitBaseSkin){
+void DrawSurfaceTree(OG_Viewport *v, SurfaceTree *tree, int lod, Vector2 offset, float scale, Color lineColor, Color cutoutColor, float hatchLineSpace, float fontSize, bool flipX, bool flipY, bool drawBounds, bool noSelectionLines, bool drawSkins, bool drawcutouts, bool drawLabels, bool omitBaseSkin){
     for (int i=0; i<tree->surfacesQ; i++){
         Surface *s = tree->linearSurfaceTree[i];
         if (s->opts & SURFACE_OPT_HIDDEN) continue;
         
         RectCorners rc = GetSurfaceBoundaries(v, s, s->origin, offset, scale, flipX, flipY);
-        if ((drawSkins || s == &tree->baseSurface) && bg){
-            DrawCadBG(bg, rc.points, 5, WHITE);
+        if (drawSkins || s == &tree->baseSurface){
+            EraseCadArea(rc.points, 5);
         }
 
         Color colors[3] = {
@@ -554,21 +585,23 @@ void DrawSurfaceTree(OG_Viewport *v, SurfaceTree *tree, int lod, Texture *bg, Ve
         };
 
         bool didDrawSkin = false;
-        bool drawBoundsTmp = drawBounds;
+        
+        Vector2 posScaled = Vector2Add(
+            Vector2Scale(pos, scale),
+            offset
+        );
+        
         switch (s->type){
             case SURFACE_COMPONENT:{
-                Vector2 posScaled = Vector2Add(
-                    Vector2Scale(pos, scale),
-                    offset
-                );
-
                 Color ccc = ColorIsEqual(s->skin.tint, WHITE) ? lineColor:ColorWithAlpha(s->skin.tint, lineColor.a); 
-
-                if (drawcutouts && s->cutout.points){
+                Vector2 surfaceScale = Vector2Multiply(Vector2Divide(s->size, s->ogSize), Vector2Scale(Vector2One(), scale));
+                
+                if (drawcutouts && (s->cutout.points || (s->cutout.rect.x > 0 && s->cutout.rect.y > 0))){
                     DrawSurfaceCutout(
                         v, s, posScaled, 
                         s->globalRotation, 
-                        scale, flipX, flipY,
+                        s->opts & SURFACE_OPT_GENERIC ? (Vector2Scale(Vector2One(), scale)) : surfaceScale, 
+                        flipX, flipY,
                         hatchLineSpace,
                         ColorWithAlpha(cutoutColor, ccc.a)
                     );
@@ -580,12 +613,10 @@ void DrawSurfaceTree(OG_Viewport *v, SurfaceTree *tree, int lod, Texture *bg, Ve
                             v, NULL, 0,
                             s->skin, lod,
                             ccc, 
-                            Vector2Add(
-                                Vector2Scale(pos, scale), 
-                                offset
-                            ), 
+                            posScaled, 
                             s->globalRotation, 
-                            scale, flipX, flipY
+                            surfaceScale, 
+                            flipX, flipY
                         );
                     }
                     
@@ -598,38 +629,27 @@ void DrawSurfaceTree(OG_Viewport *v, SurfaceTree *tree, int lod, Texture *bg, Ve
             }
 
             case SURFACE_EXTENSIBLE:{
-                drawBoundsTmp = true;
                 didDrawSkin = DrawExtensibleSkin(
-                    v, rc, bg, s->skin, lod,
+                    v, rc, s->skin, lod,
                     ColorIsEqual(s->skin.tint, WHITE) ? lineColor:ColorWithAlpha(s->skin.tint, lineColor.a), 
-                    Vector2Add(
-                        Vector2Scale(pos, scale), 
-                        offset
-                    ), 
+                    posScaled, 
                     s->globalRotation, 
                     scale, flipX, flipY
                 );
         
-                if (!didDrawSkin){
-                    DrawCadBG(
-                        bg, 
-                        rc.points, 
-                        5, 
-                        WHITE
-                    );
-                }
-
+                if (!didDrawSkin)
+                    EraseCadArea(rc.points, 5);
+                
                 break;
             }
         }
 
-        // if surface have no skin 
-        // or is extensible
-        if (!didDrawSkin || drawBoundsTmp){
+        // if surface have no skin or is extensible
+        if (!didDrawSkin || drawBounds || s->type == SURFACE_EXTENSIBLE){
             DrawSurfaceBoundaries(
                 rc, 
                 ColorWithAlpha(
-                    noSelectionLines ? colors[0] : colors[c], 
+                    colors[0], 
                     lineColor.a
                 ), 
                 false
@@ -637,14 +657,36 @@ void DrawSurfaceTree(OG_Viewport *v, SurfaceTree *tree, int lod, Texture *bg, Ve
         }
 
         // if surface is selected
-        else if (c > 0 && !noSelectionLines){
+        if (c > 0 && !noSelectionLines){
             DrawSurfaceBoundaries(
                 rc, 
                 ColorWithAlpha(
                     colors[c], 
                     lineColor.a
                 ), 
-                true
+                s->type == SURFACE_COMPONENT ? true:false
+            );
+        }
+
+        // Draw skin label
+        if (drawLabels){
+            Vector2 size = MeasureCadText(cadFont, s->skin.label.text, strlen(s->skin.label.text), fontSize, 0.0f, 0.0f);
+            Vector2 labelPos = Vector2Add(
+                Vector2Scale(Vector2Add(pos, s->skin.label.offset), scale),
+                offset
+            );
+
+            DrawCadText(
+                cadFont, 
+                s->skin.label.text, 
+                GetWorldToScreen2D(labelPos, v->camera), 
+                (Vector2){size.x/2, size.y/2*-1}, 
+                s->skin.label.rotation, 
+                fontSize, 
+                2.0f, 
+                0.0f, 
+                CAD_ALIGN_CENTER, 
+                colors[0]
             );
         }
 
@@ -1972,7 +2014,9 @@ char *ResolveAnchorName(char *ogName, SurfaceTree *st){
                         sprintf(tmpStr, "%i", ++tmp);
                         char *newName = calloc(underScoreIndex+strlen(tmpStr)+2, sizeof(char));
                         memcpy(newName, rs, underScoreIndex+1);
-                        sprintf(newName, "%s%i", newName, tmp);
+                        
+                        sprintf(newName + underScoreIndex + 1, "%i", tmp);
+
                         free(rs);
                         rs = newName;
                     }

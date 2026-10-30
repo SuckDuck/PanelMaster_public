@@ -17,6 +17,10 @@
 #include "IBMPlexMono-Medium.h"
 #include "Icon.h"
 
+#ifdef __EMSCRIPTEN__
+#include <emscripten/html5.h>
+#endif
+
 extern void Solver();
 extern float gridSpacing;
 
@@ -70,7 +74,8 @@ int main(int argc, char **argv){
     Workspace();
     DocumentEditor();
     TitleBlockEditor();
-    
+    SchematicEditor();
+
     OG_Init(PROJECT_TITLE, 60);
     
     // Set window icon
@@ -97,7 +102,20 @@ int main(int argc, char **argv){
     sprintf(componentsLibrariePath, "%s%s/data/component_library.mwl", GetApplicationDirectory(), ROOT);
     LoadComponentLibrary(componentsLibrariePath, NULL);
 
+    #ifdef __EMSCRIPTEN__
+        ChangeDirectory("panelmaster");
+    #endif
+
     while (true) {
+        
+        #ifdef __EMSCRIPTEN__
+            double width, height;
+            emscripten_get_element_css_size("#canvas", &width, &height);
+            if (GetScreenWidth() != (int)width || GetScreenHeight() != (int)height){
+                SetWindowSize((int)width, (int)height);
+            }
+        #endif
+        
         if (OG_UpdateFrame()) break;
         Solver();
         if (OG_RenderFrame()) break;

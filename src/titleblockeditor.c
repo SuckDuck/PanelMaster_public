@@ -317,7 +317,7 @@ static void TitleBoxPropertiesSection(OG_Viewport *v, mu_Context *ctx){
     if (!activeTitleBlock) return;
     if (!mu_header_ex(ctx, "TitleBoxProperties", MU_OPT_EXPANDED)) return;
     
-    mu_equal_layout_l_auto(ctx, (const char *[]){"W:", "H:", 0}, 0);
+    mu_equal_layout_l_auto(ctx, (const char *[]){"W:", "H:", 0}, 0, NULL, NULL);
     mu_label(ctx, "W:");
     mu_number_custom(
         ctx, &activeTitleBlock->size.x, 
@@ -340,7 +340,7 @@ static void TitleBoxRectPropertiesSection(OG_Viewport *v, mu_Context *ctx){
     if (!mu_header_ex(ctx, "RectProperties", MU_OPT_EXPANDED)) return;
     
     // Label
-    mu_equal_layout_l_auto(ctx, (const char *[]){"Label:", 0}, 0);
+    mu_equal_layout_l_auto(ctx, (const char *[]){"Label:", 0}, 0, NULL, NULL);
     mu_label(ctx, "Label:");
     mu_Rect next = mu_layout_next(ctx);
     mu_Id label_id = mu_get_id(ctx, "label_control", 13);
@@ -414,7 +414,7 @@ static void TitleBoxRectPropertiesSection(OG_Viewport *v, mu_Context *ctx){
     mu_pop_id(ctx);
 
     // TextSize
-    mu_equal_layout_l_auto(ctx, (const char *[]){"TextSize:", 0}, 0);
+    mu_equal_layout_l_auto(ctx, (const char *[]){"TextSize:", 0}, 0, NULL, NULL);
     mu_label(ctx, "TextSize:");
     mu_number_custom(
         ctx, &activeTitleBlock->selectedRect->textSize, 

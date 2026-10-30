@@ -18,7 +18,8 @@ typedef struct Surface Surface;
 typedef enum SurfaceOptions {
     SURFACE_OPT_FIXED_X   = 1 << 0,
     SURFACE_OPT_FIXED_Y   = 1 << 1,
-    SURFACE_OPT_HIDDEN    = 1 << 2
+    SURFACE_OPT_HIDDEN    = 1 << 2,
+    SURFACE_OPT_GENERIC   = 1 << 3
 } SurfaceOptions;
 
 typedef enum AnchorType {
@@ -105,6 +106,11 @@ typedef struct Skin {
     int lodsQ;
     float len;
     Color tint;
+    struct {
+        char text[64];
+        Vector2 offset;
+        float rotation;
+    } label;
 } Skin;
 
 typedef enum SurfaceType {
@@ -123,6 +129,7 @@ typedef struct Surface {
     float rotation;
     float globalRotation;
     Vector2 size;
+    Vector2 ogSize;
     int treeDepth;
     uint32_t opts;
 
@@ -130,6 +137,7 @@ typedef struct Surface {
     /* and fix surfaces to anchors for the others */
     Anchor *anchors[3];
     AnchorAlign anchorAlign;
+    
     struct {
         Anchor *top;
         Anchor *bottom;
@@ -150,6 +158,7 @@ typedef struct Surface {
     Skin skin;
     struct {
         Vector2 *points;
+        Vector2 rect;
         int len;
     } cutout;
 
@@ -188,18 +197,19 @@ void DrawSurfaceTree(
     OG_Viewport *v, 
     SurfaceTree *tree, 
     int lod, 
-    Texture *bg, 
     Vector2 offset, 
     float scale, 
     Color lineColor, 
     Color cutoutColor, 
     float hatchLineSpace, 
+    float fontSize,
     bool flipX, 
     bool flipY, 
     bool drawBounds, 
     bool noSelectionLines, 
     bool drawSkins, 
     bool drawcutouts,
+    bool drawLabels,
     bool omitBaseSkin
 );
 

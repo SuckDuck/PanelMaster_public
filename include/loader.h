@@ -88,7 +88,8 @@ typedef enum LoaderErrorCodesV0 {
     LDRV0_ERR_PATH          = '@',
     LDRV0_ERR_NODE          = '|',
     LDRV0_ERR_INDEX         = '/',
-    LDRV0_ERR_EXTENSIBLE    = '\\'
+    LDRV0_ERR_EXTENSIBLE    = '\\',
+    LDRV0_ERR_ORG           = '<',
 } LoaderErrorCodesV0;
 
 // LDRV0_ERR_MISSING LDRV0_ERR_ASM LDRV0_ERR_DOCUMENT LDRV0_ERR_ENTITY LDRV0_ERR_FLAGS
