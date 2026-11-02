@@ -82,7 +82,7 @@ typedef enum LoaderErrorCodesV0 {
     LDRV0_ERR_CUTOUT        = 'y',
     LDRV0_ERR_FLAGS         = 'z',
     LDRV0_ERR_BOUNDARIES    = '?',
-    LDRV0_ERR_EXTENSION     = '_',
+    LDRV0_ERR_EXTENSION     = '{',
     LDRV0_ERR_LIBRARY       = '!',
     LDRV0_ERR_PREVIEW       = '-',
     LDRV0_ERR_PATH          = '@',
@@ -91,8 +91,6 @@ typedef enum LoaderErrorCodesV0 {
     LDRV0_ERR_EXTENSIBLE    = '\\',
     LDRV0_ERR_ORG           = '<',
 } LoaderErrorCodesV0;
-
-// LDRV0_ERR_MISSING LDRV0_ERR_ASM LDRV0_ERR_DOCUMENT LDRV0_ERR_ENTITY LDRV0_ERR_FLAGS
 
 typedef struct FileGeneric {
     cJSON *root;

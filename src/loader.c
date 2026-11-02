@@ -251,7 +251,7 @@ static void FreeFileGeneric(FileGeneric f){
 
 /* <== Documentation ===========================================> */
 
-static int VerificateDocumentV0(cJSON *j){
+static int VerificateDocumentV1(cJSON *j){
     int rs = LDRV0_OK;
     
     JSON_REQUIRE_RET(width, j, cJSON_IsNumber, LDRV0_ERR_ASM, LDRV0_ERR_DOCUMENT, LDRV0_ERR_WIDTH);
@@ -262,7 +262,7 @@ static int VerificateDocumentV0(cJSON *j){
     cJSON_ArrayForEach(page, pages){
         if (!cJSON_IsObject(page)){
             rs = LDRV0_ERR_CODE;
-            SetError(LDRV0_ERR_ASM, LDRV0_ERR_DOCUMENT, LDRV0_ERR_PAGE, LDRV0_ERR_INVALID);
+            SetError(LDRV0_ERR_ASM, LDRV0_ERR_DOCUMENT, LDRV0_ERR_PAGE, LDRV0_ERR_INVALID, 0);
             return rs;
         }
 
@@ -280,7 +280,7 @@ static int VerificateDocumentV0(cJSON *j){
         cJSON_ArrayForEach(entity, entities){
             if (!cJSON_IsObject(entity)){
                 rs = LDRV0_ERR_CODE;
-                SetError(LDRV0_ERR_ASM, LDRV0_ERR_DOCUMENT, LDRV0_ERR_ENTITY, LDRV0_ERR_INVALID);
+                SetError(LDRV0_ERR_ASM, LDRV0_ERR_DOCUMENT, LDRV0_ERR_ENTITY, LDRV0_ERR_INVALID, 0);
                 return rs;
             }
 
@@ -295,8 +295,20 @@ static int VerificateDocumentV0(cJSON *j){
                     JSON_REQUIRE_RET(surface, entity, cJSON_IsString, LDRV0_ERR_ASM, LDRV0_ERR_DOCUMENT, LDRV0_ERR_ENTITY, LDRV0_ERR_SURFACE);
                     JSON_REQUIRE_RET(scale, entity, cJSON_IsNumber, LDRV0_ERR_ASM, LDRV0_ERR_DOCUMENT, LDRV0_ERR_ENTITY, LDRV0_ERR_SIZE);
                     JSON_REQUIRE_RET(flags, entity, cJSON_IsNumber, LDRV0_ERR_ASM, LDRV0_ERR_DOCUMENT, LDRV0_ERR_ENTITY, LDRV0_ERR_FLAGS);
+                    
+                    // This doesnt use JSON_REQUIRE because VBETA1.3.0 was released without saving "labelsFontSize"
+                    // So this should be this way to ensure compatibility D:
+                    cJSON *labelsFontSize = cJSON_GetObjectItem(entity, "labelsFontSize");
+                    if (labelsFontSize){
+                        if (!cJSON_IsNumber(labelsFontSize)){
+                            SetError(LDRV0_ERR_ASM, LDRV0_ERR_DOCUMENT, LDRV0_ERR_ENTITY, LDRV0_ERR_LABEL, LDRV0_ERR_SIZE, 0);
+                            return LDRV0_ERR_CODE;
+                        }
+                    }
+                    
+
                     JSON_REQUIRE_RET(annotationsFontSize, entity, cJSON_IsNumber, LDRV0_ERR_ASM, LDRV0_ERR_DOCUMENT, LDRV0_ERR_ENTITY, LDRV0_ERR_ANNOTATION, LDRV0_ERR_SIZE);
-                    JSON_REQUIRE_RET(annotationsArrowSize, entity, cJSON_IsNumber, LDRV0_ERR_ASM, LDRV0_ERR_DOCUMENT, LDRV0_ERR_ENTITY, LDRV0_ERR_ANNOTATION, LDRV0_ERR_SIZE, '2');
+                    JSON_REQUIRE_RET(annotationsArrowSize, entity, cJSON_IsNumber, LDRV0_ERR_ASM, LDRV0_ERR_DOCUMENT, LDRV0_ERR_ENTITY, LDRV0_ERR_ANNOTATION, LDRV0_ERR_SIZE, '_', '2');
                     JSON_REQUIRE_RET(lod, entity, cJSON_IsNumber, LDRV0_ERR_ASM, LDRV0_ERR_DOCUMENT, LDRV0_ERR_ENTITY, '_', 'L', 'O', 'D');
                 } break;
 
@@ -320,7 +332,7 @@ static int VerificateDocumentV0(cJSON *j){
                     cJSON_ArrayForEach(prop, properties){
                         if (!cJSON_IsObject(prop)){
                             rs = LDRV0_ERR_CODE;
-                            SetError(LDRV0_ERR_ASM, LDRV0_ERR_DOCUMENT, LDRV0_ERR_ENTITY, LDRV0_ERR_PROP, LDRV0_ERR_INVALID);
+                            SetError(LDRV0_ERR_ASM, LDRV0_ERR_DOCUMENT, LDRV0_ERR_ENTITY, LDRV0_ERR_PROP, LDRV0_ERR_INVALID, 0);
                             return rs;
                         }
 
@@ -337,7 +349,7 @@ static int VerificateDocumentV0(cJSON *j){
                 
                 default:
                     rs = LDRV0_ERR_CODE;
-                    SetError(LDRV0_ERR_ASM, LDRV0_ERR_DOCUMENT, LDRV0_ERR_ENTITY, LDRV0_ERR_INVALID, LDRV0_ERR_TYPE);
+                    SetError(LDRV0_ERR_ASM, LDRV0_ERR_DOCUMENT, LDRV0_ERR_ENTITY, LDRV0_ERR_INVALID, LDRV0_ERR_TYPE, 0);
                     return rs;
                 break;
             }
@@ -348,7 +360,7 @@ static int VerificateDocumentV0(cJSON *j){
     return LDRV0_OK;
 }
 
-static int LoadDocumentV0(cJSON *j){
+static int LoadDocumentV1(cJSON *j){
     int rs = LDRV0_OK;
 
     int width = cJSON_GetObjectItem(j, "width")->valueint;
@@ -394,6 +406,11 @@ static int LoadDocumentV0(cJSON *j){
 
                     float scale = cJSON_GetObjectItem(entity, "scale")->valuedouble;
                     int flags = cJSON_GetObjectItem(entity, "flags")->valueint;
+                    
+                    float labelsFontSize = 10.0f;
+                    cJSON *labelsFontSizeJson = cJSON_GetObjectItem(entity, "labelsFontSize");
+                    if (labelsFontSizeJson) labelsFontSize = labelsFontSizeJson->valuedouble;
+                    
                     float annotationsFontSize = cJSON_GetObjectItem(entity, "annotationsFontSize")->valuedouble;
                     float annotationsArrowSize = cJSON_GetObjectItem(entity, "annotationsArrowSize")->valuedouble;
                     int lod = cJSON_GetObjectItem(entity, "lod")->valueint;
@@ -405,6 +422,7 @@ static int LoadDocumentV0(cJSON *j){
 
                     pes->scale = scale;
                     pes->flags = flags;
+                    pes->labelsFontSize = labelsFontSize;
                     pes->annotationsFontSize = annotationsFontSize;
                     pes->annotationsArrowSize = annotationsArrowSize;
                     pes->lod = lod;
@@ -529,7 +547,7 @@ static int VerificateTitleBlockV0(cJSON *j){
         cJSON *line;
         cJSON_ArrayForEach(line, lines){
             if (!cJSON_IsNumber(line)){
-                SetError(LDRV0_ERR_TITLEBLOCK, LDRV0_ERR_RECT, LDRV0_ERR_LINE);
+                SetError(LDRV0_ERR_TITLEBLOCK, LDRV0_ERR_RECT, LDRV0_ERR_LINE, 0);
                 return LDRV0_ERR_CODE;
             }   
         }
@@ -1590,7 +1608,7 @@ static int VerificateConstraintV0(cJSON *j){
             else if (strcmp(surface->valuestring, "coRight") == 0) ok = true;
             
             if (!ok){
-                SetError(LDRV0_ERR_ASM, LDRV0_ERR_CONSTRAINT, LDRV0_ERR_SURFACE, LDRV0_ERR_TYPE);
+                SetError(LDRV0_ERR_ASM, LDRV0_ERR_CONSTRAINT, LDRV0_ERR_SURFACE, LDRV0_ERR_TYPE, 0);
                 return LDRV0_ERR_CODE;
             }
         }
@@ -1838,7 +1856,7 @@ static int LoadAssemblyV1(cJSON *j){
     cJSON *block = NULL;
     cJSON_ArrayForEach(block, title_blocks){
         if (!cJSON_IsString(block)){
-            SetError(LDRV0_ERR_ASM, LDRV0_ERR_TITLEBLOCK);
+            SetError(LDRV0_ERR_ASM, LDRV0_ERR_TITLEBLOCK, 0);
             titleBlockError = true;
             goto titleBlockOut;
         }
@@ -1870,7 +1888,7 @@ static int LoadAssemblyV1(cJSON *j){
             } break;
 
             default:{
-                SetError(LDRV0_ERR_ASM, LDRV0_ERR_TITLEBLOCK, LDRV0_ERR_INVALID, LDRV0_ERR_FILE);
+                SetError(LDRV0_ERR_ASM, LDRV0_ERR_TITLEBLOCK, LDRV0_ERR_INVALID, LDRV0_ERR_FILE, 0);
                 FreeFileGeneric(f);
                 titleBlockError = true;
                 goto titleBlockOut;
@@ -1906,7 +1924,7 @@ static int LoadAssemblyV1(cJSON *j){
 
     //  Verificate the main document section
     JSON_REQUIRE_RET(main_document, j, cJSON_IsObject, LDRV0_ERR_ASM, LDRV0_ERR_DOCUMENT, LDRV0_ERR_SECTION);
-    rs = VerificateDocumentV0(main_document);
+    rs = VerificateDocumentV1(main_document);
     if (rs != LDRV0_OK){
         // free every titleBlock in backup
         activeTitleBlock = NULL;
@@ -2191,7 +2209,7 @@ static int LoadAssemblyV1(cJSON *j){
     }
 
     // Load documentation
-    rs = LoadDocumentV0(main_document);
+    rs = LoadDocumentV1(main_document);
     if (rs != LDRV0_OK)
         return rs;
 
@@ -2205,7 +2223,7 @@ static int VerificateLibNodeV0(cJSON *j, bool noFolder){
     int rs = LDRV0_OK;
     
     if (!cJSON_IsObject(j)){
-        SetError(LDRV0_ERR_LIBRARY, LDRV0_ERR_INVALID, LDRV0_ERR_TREE, LDRV0_ERR_NODE);
+        SetError(LDRV0_ERR_LIBRARY, LDRV0_ERR_INVALID, LDRV0_ERR_TREE, LDRV0_ERR_NODE, 0);
         return LDRV0_ERR_CODE;
     }
 
@@ -2215,12 +2233,12 @@ static int VerificateLibNodeV0(cJSON *j, bool noFolder){
     cJSON *content = cJSON_GetObjectItem(j, "content");
     if (content){
         if (noFolder){
-            SetError(LDRV0_ERR_LIBRARY, LDRV0_ERR_INVALID, LDRV0_ERR_EXTENSIBLE, LDRV0_ERR_NODE);
+            SetError(LDRV0_ERR_LIBRARY, LDRV0_ERR_INVALID, LDRV0_ERR_EXTENSIBLE, LDRV0_ERR_NODE, 0);
             return LDRV0_ERR_CODE;
         }
 
         if (!cJSON_IsArray(content)){
-            SetError(LDRV0_ERR_LIBRARY, LDRV0_ERR_INVALID, LDRV0_ERR_TREE, LDRV0_ERR_NODE);
+            SetError(LDRV0_ERR_LIBRARY, LDRV0_ERR_INVALID, LDRV0_ERR_TREE, LDRV0_ERR_NODE, 0);
             return LDRV0_ERR_CODE;
         }
 
@@ -2239,13 +2257,13 @@ static int VerificateLibNodeV0(cJSON *j, bool noFolder){
         JSON_REQUIRE_RET(path, j, &cJSON_IsString, LDRV0_ERR_LIBRARY, LDRV0_ERR_TREE, LDRV0_ERR_NODE, LDRV0_ERR_PATH);
         JSON_REQUIRE_RET(preview, j, &cJSON_IsArray, LDRV0_ERR_LIBRARY, LDRV0_ERR_TREE, LDRV0_ERR_NODE, LDRV0_ERR_PREVIEW);
         if (cJSON_GetArraySize(preview) != 3){
-            SetError(LDRV0_ERR_LIBRARY, LDRV0_ERR_INVALID, LDRV0_ERR_TREE, LDRV0_ERR_NODE, LDRV0_ERR_INDEX);
+            SetError(LDRV0_ERR_LIBRARY, LDRV0_ERR_INVALID, LDRV0_ERR_TREE, LDRV0_ERR_NODE, LDRV0_ERR_INDEX, 0);
             return LDRV0_ERR_CODE;
         }
 
         for (int i=0; i<3; i++){
             if (!cJSON_IsNumber(cJSON_GetArrayItem(preview, i))){
-                SetError(LDRV0_ERR_LIBRARY, LDRV0_ERR_INVALID, LDRV0_ERR_TREE, LDRV0_ERR_NODE, LDRV0_ERR_INDEX);
+                SetError(LDRV0_ERR_LIBRARY, LDRV0_ERR_INVALID, LDRV0_ERR_TREE, LDRV0_ERR_NODE, LDRV0_ERR_INDEX, 0);
                 return LDRV0_ERR_CODE;
             }
         }
@@ -2262,7 +2280,7 @@ static int LoadComponentLibraryV0(cJSON *j){
     cJSON *preview;
     cJSON_ArrayForEach(preview, previews){
         if (!cJSON_IsString(preview)){
-            SetError(LDRV0_ERR_LIBRARY, LDRV0_ERR_INVALID, LDRV0_ERR_PREVIEW);
+            SetError(LDRV0_ERR_LIBRARY, LDRV0_ERR_INVALID, LDRV0_ERR_PREVIEW, 0);
             return LDRV0_ERR_CODE;
         }
 
@@ -2270,13 +2288,13 @@ static int LoadComponentLibraryV0(cJSON *j){
         sprintf(atlasPath, "%s%s/data/%s", GetApplicationDirectory(), ROOT, preview->valuestring);
         
         if (!FileExists(atlasPath)){
-            SetError(LDRV0_ERR_LIBRARY, LDRV0_ERR_MISSING, LDRV0_ERR_PREVIEW, LDRV0_ERR_PATH);
+            SetError(LDRV0_ERR_LIBRARY, LDRV0_ERR_MISSING, LDRV0_ERR_PREVIEW, LDRV0_ERR_PATH, 0);
             return LDRV0_ERR_CODE;
         }
 
         Image img = LoadImage(atlasPath);
         if (img.data == NULL){
-            SetError(LDRV0_ERR_LIBRARY, LDRV0_ERR_INVALID, LDRV0_ERR_PREVIEW, LDRV0_ERR_PATH);
+            SetError(LDRV0_ERR_LIBRARY, LDRV0_ERR_INVALID, LDRV0_ERR_PREVIEW, LDRV0_ERR_PATH, 0);
             return LDRV0_ERR_CODE;
         }
 

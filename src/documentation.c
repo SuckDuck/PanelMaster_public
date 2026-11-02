@@ -183,10 +183,11 @@ PageEntitySurface *AddSurfaceEntity(Page *p, Surface *s){
     es->scale = 1.0f;
     
     // setup flags
+    es->flags |= PESF_DRAW_LABELS;
     es->flags |= PESF_DRAW_ANNOTATIONS;
     es->flags |= PESF_DRAW_SKINS;
 
-    es->annotationsFontSize = OG.defaultFontSize;
+    es->annotationsFontSize = 10.0f;
     es->annotationsArrowSize = 10.0f;
     es->labelsFontSize = 10.0f;
     

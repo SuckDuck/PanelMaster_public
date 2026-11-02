@@ -83,18 +83,33 @@ static void DuplicateSurface(char *copiesString){
     char *srcPath = srcSurface->sourcePath;
     SelectSurface(srcSurface, false, false);
     for (int i=0; i<val; i++){
-        LoadSurface(srcPath, NULL);
-        Surface *newSurface = activeTree->lastInsertedSurface;
-        memset(newSurface->sourcePath, '\0', sizeof(char) * OG_PATH_MAX);
-        sprintf(newSurface->sourcePath, "%s", srcPath);
+        Surface *newSurface;
 
-        char *ogName = srcSurface->name;
-        char *newName = ResolveSurfaceName(ogName, activeTree);
+        if (srcSurface->opts & SURFACE_OPT_GENERIC){
+            char *newName = ResolveSurfaceName(srcSurface->name, activeTree);
+            newSurface = AddSurface(activeTree->surfaceSelection[0], srcSurface->id, newName, SURFACE_COMPONENT);
+            free(newName);
+
+            newSurface->skin.tint = srcSurface->skin.tint;
+            newSurface->origin = srcSurface->origin;
+            newSurface->cutout.rect = srcSurface->cutout.rect;
+        }
+
+        else {
+            if (!LoadSurface(srcPath, NULL)) return;
+            newSurface = activeTree->lastInsertedSurface;
+            memset(newSurface->sourcePath, '\0', sizeof(char) * OG_PATH_MAX);
+            sprintf(newSurface->sourcePath, "%s", srcPath);
+        }
+
+        char *newName = ResolveSurfaceName(srcSurface->name, activeTree);
         free(newSurface->name);
         newSurface->name = newName;
         newSurface->pos = (Vector2){10,10};
         newSurface->opts = srcSurface->opts;
         newSurface->size = srcSurface->size;
+        newSurface->skin.label = srcSurface->skin.label;
+    
         SelectSurface(newSurface, false, false);
     }
 }
@@ -606,7 +621,10 @@ static void SurfaceContextMenu(char *opt, void *param){
     if (strcmp(opt, "Add Generic") == 0){
         const float baseSize = 40.0f;
 
-        Surface *s = AddSurface(activeTree->surfaceSelection[0], "generic", ResolveSurfaceName("generic", activeTree), SURFACE_COMPONENT);
+        char *name = ResolveSurfaceName("generic", activeTree);
+        Surface *s = AddSurface(activeTree->surfaceSelection[0], "generic", name, SURFACE_COMPONENT);
+        free(name);
+        
         s->size = (Vector2){baseSize, baseSize};
         s->ogSize = (Vector2){baseSize, baseSize};
         s->skin.tint = (Color){255, 255, 255, 255};
@@ -798,12 +816,14 @@ static void SurfaceContextMenu(char *opt, void *param){
         //TOP
         if (!s[0]->cutoutAnchors.top){
             sprintf(name, "%s_co_top", s[0]->name);
+            char *newName = ResolveAnchorName(name, s[0]->tree);
             Anchor *top = AddAnchor(
                 s[0]->tree, 
-                ResolveAnchorName(name, s[0]->tree),
+                newName,
                 ANCHOR_HORIZONTAL, 
                 0
             );
+            free(newName);
             FixAnchorToSurface(top, s[0]);
             s[0]->cutoutAnchors.top = top;
         }
@@ -813,12 +833,14 @@ static void SurfaceContextMenu(char *opt, void *param){
         //BOTTOM
         if (!s[0]->cutoutAnchors.bottom){
             sprintf(name, "%s_co_bottom", s[0]->name);
+            char *newName = ResolveAnchorName(name, s[0]->tree);
             Anchor *bottom = AddAnchor(
                 s[0]->tree, 
-                ResolveAnchorName(name, s[0]->tree),
+                newName,
                 ANCHOR_HORIZONTAL, 
                 0
             );
+            free(newName);
             FixAnchorToSurface(bottom, s[0]);
             s[0]->cutoutAnchors.bottom = bottom;
         }
@@ -828,12 +850,14 @@ static void SurfaceContextMenu(char *opt, void *param){
         //LEFT
         if (!s[0]->cutoutAnchors.left){
             sprintf(name, "%s_co_left", s[0]->name);
+            char *newName = ResolveAnchorName(name, s[0]->tree);
             Anchor *left = AddAnchor(
                 s[0]->tree, 
-                ResolveAnchorName(name, s[0]->tree),
+                newName,
                 ANCHOR_VERTICAL, 
                 0
             );
+            free(newName);
             FixAnchorToSurface(left, s[0]);
             s[0]->cutoutAnchors.left = left;
         }
@@ -843,12 +867,14 @@ static void SurfaceContextMenu(char *opt, void *param){
         //RIGHT
         if (!s[0]->cutoutAnchors.right){
             sprintf(name, "%s_co_right", s[0]->name);
+            char *newName = ResolveAnchorName(name, s[0]->tree);
             Anchor *right = AddAnchor(
                 s[0]->tree, 
-                ResolveAnchorName(name, s[0]->tree),
+                newName,
                 ANCHOR_VERTICAL, 
                 0
             );
+            free(newName);
             FixAnchorToSurface(right, s[0]);
             s[0]->cutoutAnchors.right = right;
         }

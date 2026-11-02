@@ -4,7 +4,7 @@ import origami.build as origami
 import sys, shutil
 
 project_name = "panelmaster"
-project_version = "BETA1.3.0"
+project_version = "BETA1.3.1"
 
 CC          = "gcc"
 BUILD_DIR   = "build"

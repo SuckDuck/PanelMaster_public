@@ -1250,11 +1250,13 @@ void CreateSurfaceBoundarieAnchors(Surface *s){
                     if (FloatEquals(GetAnchorAbsValue(a), absVal)) return;
                 }
 
+                char *newName = ResolveAnchorName(s->anchors[0]->name, s->tree);
                 Anchor *newA = AddAnchorOffset(
                     s->anchors[0],
-                    ResolveAnchorName(s->anchors[0]->name, s->tree), 
+                    newName, 
                     val
                 );
+                free(newName);
 
                 AnchorToggleLock(newA);
             }
@@ -1269,12 +1271,13 @@ void CreateSurfaceBoundarieAnchors(Surface *s){
                 }
 
                 for (int i=0; i<2; i++){
+                    char *newName = ResolveAnchorName(s->anchors[0]->name, s->tree);
                     Anchor *newA = AddAnchorOffset(
                         s->anchors[0],
-                        ResolveAnchorName(s->anchors[0]->name, s->tree), 
+                        newName, 
                         val * (i==0 ? -1:1)
                     );
-
+                    free(newName);
                     AnchorToggleLock(newA);
                 }
             }
@@ -1311,12 +1314,14 @@ void CreateSurfaceBoundarieAnchors(Surface *s){
     // TOP
     if (!s->boundariesAnchors.top){
         sprintf(name, "%s_top", s->name);
+        char *newName = ResolveAnchorName(name, s->tree);
         Anchor *top = AddAnchor(
             s->tree, 
-            ResolveAnchorName(name, s->tree),
+            newName,
             ANCHOR_HORIZONTAL, 
             0
         );
+        free(newName);
         FixAnchorToSurface(top, s);
         s->boundariesAnchors.top = top;
     }
@@ -1324,12 +1329,14 @@ void CreateSurfaceBoundarieAnchors(Surface *s){
     // BOTTOM
     if (!s->boundariesAnchors.bottom){
         sprintf(name, "%s_bottom", s->name);
+        char *newName = ResolveAnchorName(name, s->tree);
         Anchor *bottom = AddAnchor(
             s->tree, 
-            ResolveAnchorName(name, s->tree), 
+            newName,
             ANCHOR_HORIZONTAL, 
             0
         );
+        free(newName);
         FixAnchorToSurface(bottom, s);
         s->boundariesAnchors.bottom = bottom;
     }
@@ -1337,12 +1344,14 @@ void CreateSurfaceBoundarieAnchors(Surface *s){
     // LEFT
     if (!s->boundariesAnchors.left){
         sprintf(name, "%s_left", s->name);
+        char *newName = ResolveAnchorName(name, s->tree);
         Anchor *left = AddAnchor(
             s->tree, 
-            ResolveAnchorName(name, s->tree), 
+            newName, 
             ANCHOR_VERTICAL, 
             0
         );
+        free(newName);
         FixAnchorToSurface(left, s);
         s->boundariesAnchors.left = left;
     }
@@ -1350,12 +1359,14 @@ void CreateSurfaceBoundarieAnchors(Surface *s){
     // RIGHT
     if (!s->boundariesAnchors.right){
         sprintf(name, "%s_right", s->name);
+        char *newName = ResolveAnchorName(name, s->tree);
         Anchor *right = AddAnchor(
             s->tree, 
-            ResolveAnchorName(name, s->tree), 
+            newName, 
             ANCHOR_VERTICAL, 
             0
         );
+        free(newName),
         FixAnchorToSurface(right, s);
         s->boundariesAnchors.right = right;
     }

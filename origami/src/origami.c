@@ -169,15 +169,15 @@ void UpdateViewportUIInput(OG_Viewport *v){
     Vector2 mousePosition = OG_GetMouseOverlayPosition(v);
     
     mu_input_mousemove(&v->ctx, mousePosition.x, mousePosition.y);
-    if (IsMouseButtonReleased(MOUSE_BUTTON_LEFT)) 
-            mu_input_mouseup(&v->ctx,mousePosition.x,mousePosition.y,MU_MOUSE_LEFT);
+    if (IsMouseButtonReleased(MOUSE_BUTTON_LEFT)) mu_input_mouseup(&v->ctx,mousePosition.x,mousePosition.y,MU_MOUSE_LEFT);
+    if (IsMouseButtonReleased(MOUSE_BUTTON_RIGHT)) mu_input_mouseup(&v->ctx,mousePosition.x,mousePosition.y,MU_MOUSE_RIGHT);
     if (IsKeyReleased(KEY_LEFT_SHIFT)) mu_input_keyup(&v->ctx, MU_KEY_SHIFT); 
     if (IsKeyReleased(KEY_ENTER)) mu_input_keyup(&v->ctx, MU_KEY_RETURN);    
     if (IsKeyReleased(KEY_BACKSPACE)) mu_input_keyup(&v->ctx, MU_KEY_BACKSPACE);
 
     if (v == OG.viewports.tail){
-        if (IsMouseButtonPressed(MOUSE_BUTTON_LEFT)) 
-            mu_input_mousedown(&v->ctx, mousePosition.x,mousePosition.y,MU_MOUSE_LEFT);
+        if (IsMouseButtonPressed(MOUSE_BUTTON_LEFT)) mu_input_mousedown(&v->ctx, mousePosition.x,mousePosition.y,MU_MOUSE_LEFT);
+        if (IsMouseButtonPressed(MOUSE_BUTTON_RIGHT)) mu_input_mousedown(&v->ctx, mousePosition.x,mousePosition.y,MU_MOUSE_RIGHT);
 
         float wheel = GetMouseWheelMove();
         wheel = (wheel > 0) - (wheel < 0);

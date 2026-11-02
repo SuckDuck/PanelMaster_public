@@ -36,10 +36,11 @@ static void SerializeEntityText(cJSON *j, PageEntityText *t){
     cJSON_AddNumberToObject(j, "alignment", t->alignment);
 }
 
-static void SerializeEmtitySurface(cJSON *j, PageEntitySurface *s){
+static void SerializeEntitySurface(cJSON *j, PageEntitySurface *s){
     cJSON_AddStringToObject(j, "surface", s->surface->name);
     cJSON_AddNumberToObject(j, "scale", s->scale);
     cJSON_AddNumberToObject(j, "flags", s->flags);
+    cJSON_AddNumberToObject(j, "labelsFontSize", s->labelsFontSize);
     cJSON_AddNumberToObject(j, "annotationsFontSize", s->annotationsFontSize);
     cJSON_AddNumberToObject(j, "annotationsArrowSize", s->annotationsArrowSize);
     cJSON_AddNumberToObject(j, "lod", s->lod);
@@ -59,7 +60,7 @@ static cJSON *SerializeEntity(PageEntity *pe){
     cJSON_AddNumberToObject(pos, "y", pe->pos.y);
     
     switch (pe->type){
-        case PAGE_ENTITY_SURFACE:    SerializeEmtitySurface(j, pe->surface); break;
+        case PAGE_ENTITY_SURFACE:    SerializeEntitySurface(j, pe->surface); break;
         case PAGE_ENTITY_TEXT:       SerializeEntityText(j, pe->text);       break;
         case PAGE_ENTITY_TITLEBLOCK: SerializeEntityBlock(j, pe->block);     break;
         case PAGE_ENTITY_STICKER:    SerializeEntitySticker(j, pe->sticker); break;
